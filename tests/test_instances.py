@@ -196,9 +196,7 @@ class TestInstancesResource:
         mock_http = MagicMock()
         mock_http.post.return_value = {"instance": SAMPLE_INSTANCE}
         # Mock the group lookup - groups endpoint returns the group
-        mock_http.get.return_value = {
-            "groups": [{"id": 621, "name": "MTNNG_CLOUD_AZ_1"}]
-        }
+        mock_http.get.return_value = {"groups": [{"id": 621, "name": "MTNNG_CLOUD_AZ_1"}]}
 
         resource = InstancesResource(mock_http)
         instance = resource.create(

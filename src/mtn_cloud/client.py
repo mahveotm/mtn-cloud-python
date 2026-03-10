@@ -176,7 +176,6 @@ class MTNCloud:
             self._groups = GroupsResource(self._http)
         return self._groups
 
-
     @property
     def plans(self) -> PlansResource:
         """

@@ -21,7 +21,7 @@ from mtn_cloud.models.instance import (
 from mtn_cloud.resources.base import BaseResource
 
 if TYPE_CHECKING:
-    from mtn_cloud.http import HTTPClient
+    pass
 
 
 class InstancesResource(BaseResource[Instance]):

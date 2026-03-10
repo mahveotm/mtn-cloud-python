@@ -395,7 +395,7 @@ class InstanceCreate(BaseModel):
         if self.environment:
             instance["instanceContext"] = self.environment
 
-        # Cloud (always string name)
+        # Cloud
         instance["cloud"] = self.cloud
 
         # Group/Site (use resolved group ID)

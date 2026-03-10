@@ -71,7 +71,6 @@ class TestMTNCloudResources:
             groups = cloud.groups
             assert groups is not None
 
-
     def test_plans_property(self):
         """Test plans resource manager."""
         with patch("mtn_cloud.client.HTTPClient"):
