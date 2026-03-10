@@ -11,6 +11,7 @@ from mtn_cloud.config import MTNCloudConfig
 from mtn_cloud.http import HTTPClient
 from mtn_cloud.models.user import User
 from mtn_cloud.resources.groups import GroupsResource
+from mtn_cloud.resources.instance_types import InstanceTypesResource
 from mtn_cloud.resources.instances import InstancesResource
 from mtn_cloud.resources.networks import NetworksResource
 from mtn_cloud.resources.plans import PlansResource
@@ -57,6 +58,7 @@ class MTNCloud:
 
     Attributes:
         instances: Manage compute instances
+        instance_types: Discover available instance types
         networks: Manage networks
         groups: Manage groups (sites)
         plans: Manage service plans
@@ -115,6 +117,7 @@ class MTNCloud:
 
         # Initialize resource managers
         self._instances: InstancesResource | None = None
+        self._instance_types: InstanceTypesResource | None = None
         self._networks: NetworksResource | None = None
         self._groups: GroupsResource | None = None
         self._plans: PlansResource | None = None
@@ -139,6 +142,31 @@ class MTNCloud:
         if self._instances is None:
             self._instances = InstancesResource(self._http)
         return self._instances
+
+    @property
+    def instance_types(self) -> InstanceTypesResource:
+        """
+        Access the instance types resource manager.
+
+        Instance types define the OS or application templates available
+        for provisioning on MTN Cloud.
+
+        Example:
+            ```python
+            # List all instance types
+            instance_types = cloud.instance_types.list()
+
+            # List OS types only
+            os_types = cloud.instance_types.list_os()
+
+            # Get by code
+            centos = cloud.instance_types.get_by_code("MTN-CS10")
+            print(f"Layout ID: {centos.default_layout_id}")
+            ```
+        """
+        if self._instance_types is None:
+            self._instance_types = InstanceTypesResource(self._http)
+        return self._instance_types
 
     @property
     def networks(self) -> NetworksResource:

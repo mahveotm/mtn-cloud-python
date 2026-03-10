@@ -5,10 +5,12 @@ Network Models
 Models for MTN Cloud networks.
 """
 
-from enum import Enum
-from typing import Any
+from __future__ import annotations
 
-from pydantic import Field
+from enum import Enum
+from typing import Any, Optional
+
+from pydantic import Field, field_validator
 
 from mtn_cloud.models.base import Resource
 
@@ -42,42 +44,57 @@ class Network(Resource):
     """
 
     # Network details
-    description: str | None = Field(default=None, description="Network description")
-    code: str | None = Field(default=None, description="Network code")
+    description: Optional[str] = Field(default=None, description="Network description")
+    code: Optional[str] = Field(default=None, description="Network code")
 
-    # Type
-    type: str | None = Field(default=None, alias="typeCode", description="Network type")
-    type_id: int | None = Field(default=None, alias="typeId")
+    # Type - can come as dict or string from API
+    type: Optional[dict[str, Any] | str] = Field(default=None, description="Network type info")
+    type_id: Optional[int] = Field(default=None, alias="typeId")
 
     # Configuration
-    cidr: str | None = Field(default=None, description="CIDR block")
-    gateway: str | None = Field(default=None, description="Gateway IP")
-    dns_primary: str | None = Field(default=None, alias="dnsPrimary")
-    dns_secondary: str | None = Field(default=None, alias="dnsSecondary")
+    cidr: Optional[str] = Field(default=None, description="CIDR block")
+    gateway: Optional[str] = Field(default=None, description="Gateway IP")
+    dns_primary: Optional[str] = Field(default=None, alias="dnsPrimary")
+    dns_secondary: Optional[str] = Field(default=None, alias="dnsSecondary")
 
     # VLAN
-    vlan_id: int | None = Field(default=None, alias="vlanId")
+    vlan_id: Optional[int] = Field(default=None, alias="vlanId")
 
     # Cloud/Zone
-    zone: dict[str, Any] | None = Field(default=None, description="Zone/cloud info")
+    zone: Optional[dict[str, Any]] = Field(default=None, description="Zone/cloud info")
 
     # Status
     active: bool = Field(default=True, description="Whether network is active")
-    visibility: str | None = Field(default=None, description="Network visibility")
+    visibility: Optional[str] = Field(default=None, description="Network visibility")
 
     # DHCP
-    dhcp_server: bool | None = Field(default=None, alias="dhcpServer")
-    dhcp_range_start: str | None = Field(default=None, alias="dhcpRangeStart")
-    dhcp_range_end: str | None = Field(default=None, alias="dhcpRangeEnd")
+    dhcp_server: Optional[bool] = Field(default=None, alias="dhcpServer")
+    dhcp_range_start: Optional[str] = Field(default=None, alias="dhcpRangeStart")
+    dhcp_range_end: Optional[str] = Field(default=None, alias="dhcpRangeEnd")
 
     # External reference
-    external_id: str | None = Field(default=None, alias="externalId")
+    external_id: Optional[str] = Field(default=None, alias="externalId")
 
     @property
-    def cloud_id(self) -> int | None:
+    def type_code(self) -> Optional[str]:
+        """Get the network type code."""
+        if isinstance(self.type, dict):
+            return self.type.get("code")
+        return self.type
+
+    @property
+    def type_name(self) -> Optional[str]:
+        """Get the network type name."""
+        if isinstance(self.type, dict):
+            return self.type.get("name")
+        return self.type
+
+    @property
+    def cloud_id(self) -> Optional[int]:
         """Get the cloud/zone ID."""
         if self.zone:
             return self.zone.get("id")
+        return None
         return None
 
 

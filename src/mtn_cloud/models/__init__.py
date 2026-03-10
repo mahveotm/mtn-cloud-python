@@ -17,6 +17,7 @@ from mtn_cloud.models.instance import (
     InstanceUpdate,
     InstanceVolume,
 )
+from mtn_cloud.models.instance_type import InstanceType, InstanceTypeLayout
 from mtn_cloud.models.network import Network, NetworkType
 from mtn_cloud.models.plan import ServicePlan
 from mtn_cloud.models.user import User, UserRole
@@ -35,6 +36,9 @@ __all__ = [
     "InstanceVolume",
     "InstanceNetwork",
     "InstanceStatus",
+    # Instance Type
+    "InstanceType",
+    "InstanceTypeLayout",
     # Network
     "Network",
     "NetworkType",

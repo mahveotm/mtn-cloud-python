@@ -57,6 +57,15 @@ class TestMTNCloudResources:
             # Should return same instance on repeated access
             assert cloud.instances is instances
 
+    def test_instance_types_property(self):
+        """Test instance types resource manager."""
+        with patch("mtn_cloud.client.HTTPClient"):
+            cloud = MTNCloud(token="test")
+            instance_types = cloud.instance_types
+            assert instance_types is not None
+            # Should return same instance on repeated access
+            assert cloud.instance_types is instance_types
+
     def test_networks_property(self):
         """Test networks resource manager."""
         with patch("mtn_cloud.client.HTTPClient"):
