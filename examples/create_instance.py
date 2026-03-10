@@ -1,0 +1,127 @@
+"""
+MTN Cloud SDK - Create Instance Example
+=======================================
+
+This example shows how to create and manage an instance.
+
+Run with:
+    export MTN_CLOUD_TOKEN="your-token"
+    python examples/create_instance.py
+"""
+
+from mtn_cloud import MTNCloud, MTNCloudError
+from mtn_cloud.models.instance import InstanceConfig, InstanceVolume, InstanceNetwork
+
+
+def main():
+    cloud = MTNCloud()
+
+    print("MTN Cloud - Create Instance Example")
+    print("=" * 50)
+
+    # First, let's discover available resources
+    print("\n1. Discovering available resources...")
+
+    groups = cloud.groups.list()
+    clouds = cloud.clouds.list()
+    plans = cloud.plans.list()
+    networks = cloud.networks.list()
+
+    if not groups or not clouds:
+        print("❌ No groups or clouds available. Contact your admin.")
+        return
+
+    # Use first available group and cloud
+    group = groups[0]
+    zone = clouds[0]
+    plan = plans[0] if plans else None
+    network = networks[0] if networks else None
+
+    print(f"   Group: {group.name} (ID: {group.id})")
+    print(f"   Cloud: {zone.name} (ID: {zone.id})")
+    if plan:
+        print(f"   Plan: {plan.name} (ID: {plan.id})")
+    if network:
+        print(f"   Network: {network.name} (ID: {network.id})")
+
+    # Build instance configuration
+    print("\n2. Preparing instance configuration...")
+
+    instance_name = "mtn-cloud-sdk-demo"
+
+    # NOTE: You'll need to adjust these values for your environment
+    # These are example values - get real ones from your MTN Cloud console
+    config = InstanceConfig(
+        resource_pool_id="pool-214",           # Your resource pool
+        availability_zone="Lagos-AZ-1-fd1",    # Your availability zone
+        security_group="default",
+    )
+
+    volumes = [
+        InstanceVolume(
+            name="root",
+            size=20,  # 20 GB
+            root_volume=True,
+        ),
+    ]
+
+    network_interfaces = []
+    if network:
+        network_interfaces.append(
+            InstanceNetwork(
+                network_id=network.id,
+                # ip_address="192.168.100.50",  # Optional: static IP
+            )
+        )
+
+    print(f"   Instance name: {instance_name}")
+    print(f"   Root volume: 20GB")
+
+    # Create the instance
+    print("\n3. Creating instance...")
+    print("   (This is a demo - uncomment the code below to actually create)")
+
+    # UNCOMMENT THE FOLLOWING TO ACTUALLY CREATE AN INSTANCE:
+    # --------------------------------------------------------
+    # try:
+    #     instance = cloud.instances.create(
+    #         name=instance_name,
+    #         cloud_id=zone.id,
+    #         group_id=group.id,
+    #         instance_type_code="MTN-CS10",  # Adjust for your environment
+    #         layout_id=327,                    # Adjust for your environment
+    #         plan_id=plan.id if plan else 6923,
+    #         config=config,
+    #         volumes=volumes,
+    #         network_interfaces=network_interfaces,
+    #         labels=["demo", "sdk-example"],
+    #     )
+    #
+    #     print(f"   ✅ Instance created: {instance.name} (ID: {instance.id})")
+    #     print(f"   Status: {instance.status}")
+    #
+    #     # Wait for it to be running
+    #     print("\n4. Waiting for instance to be running...")
+    #     instance = cloud.instances.wait_until_running(instance.id, timeout=300)
+    #     print(f"   ✅ Instance is now: {instance.status}")
+    #     print(f"   IP Address: {instance.primary_ip}")
+    #
+    #     # Optionally stop and delete
+    #     # print("\n5. Cleaning up...")
+    #     # instance.stop()
+    #     # instance.delete()
+    #     # print("   ✅ Instance deleted")
+    #
+    # except MTNCloudError as e:
+    #     print(f"   ❌ Failed: {e}")
+    # --------------------------------------------------------
+
+    print("\n" + "=" * 50)
+    print("Demo complete!")
+    print("Uncomment the creation code to actually create an instance.")
+    print("=" * 50)
+
+
+if __name__ == "__main__":
+    main()
+

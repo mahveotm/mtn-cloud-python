@@ -1,0 +1,121 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mtn-cloud"
+version = "0.1.0"
+description = "Community Python SDK for MTN Cloud (Morpheus) - Deploy and manage cloud resources with ease"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Marvellous Osuolale", email = "m@rvellous.com" }
+]
+maintainers = [
+    { name = "Marvellous Osuolale", email = "m@rvellous.com" }
+]
+keywords = [
+    "mtn",
+    "cloud",
+    "morpheus",
+    "sdk",
+    "api",
+    "infrastructure",
+    "devops"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+    "Typing :: Typed",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.28.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "typing-extensions>=4.5.0",
+    "urllib3>=2.0.0",
+]
+
+[project.optional-dependencies]
+cli = [
+    "click>=8.1.0",
+    "rich>=13.0.0",
+    "pyyaml>=6.0.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.21.0",
+    "respx>=0.20.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "types-requests>=2.28.0",
+    "pre-commit>=3.0.0",
+]
+all = ["mtn-cloud[cli,dev]"]
+
+[project.scripts]
+mtn-cloud = "mtn_cloud.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/mahveotm/mtn-cloud-python"
+Documentation = "https://github.com/mahveotm/mtn-cloud-python#readme"
+Repository = "https://github.com/mahveotm/mtn-cloud-python"
+Issues = "https://github.com/mahveotm/mtn-cloud-python/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mtn_cloud"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
