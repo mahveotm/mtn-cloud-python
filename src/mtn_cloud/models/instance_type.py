@@ -7,7 +7,7 @@ Models for MTN Cloud instance types.
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List
 
 from pydantic import Field
 
@@ -56,10 +56,12 @@ class InstanceType(Resource):
 
     # Basic info
     code: str = Field(..., description="Instance type code (e.g., 'MTN-CS10')")
-    description: Optional[str] = Field(default=None, description="Instance type description")
+    description: str | None = Field(default=None, description="Instance type description")
 
     # Category
-    category: Optional[str] = Field(default=None, description="Category (e.g., 'os', 'sql', 'web', 'apps')")
+    category: str | None = Field(
+        default=None, description="Category (e.g., 'os', 'sql', 'web', 'apps')"
+    )
 
     # Labels
     labels: List[str] = Field(default_factory=list, description="Labels/tags")
@@ -70,8 +72,8 @@ class InstanceType(Resource):
     visibility: str = Field(default="public", description="Visibility (public/private)")
 
     # Provisioning
-    provision_type_code: Optional[str] = Field(alias="provisionTypeCode", default="openstack")
-    environment_prefix: Optional[str] = Field(alias="environmentPrefix", default=None)
+    provision_type_code: str | None = Field(alias="provisionTypeCode", default="openstack")
+    environment_prefix: str | None = Field(alias="environmentPrefix", default=None)
 
     # Versions
     versions: List[str] = Field(default_factory=list, description="Available versions")
@@ -84,7 +86,7 @@ class InstanceType(Resource):
     )
 
     # Account
-    account: Optional[dict[str, Any]] = Field(default=None, description="Account info")
+    account: dict[str, Any] | None = Field(default=None, description="Account info")
 
     def __str__(self) -> str:
         """Return string representation with id, name, code, and default layout id."""
@@ -100,20 +102,20 @@ class InstanceType(Resource):
         return self.instance_type_layouts
 
     @property
-    def default_layout_id(self) -> Optional[int]:
+    def default_layout_id(self) -> int | None:
         """Get the default (first) layout ID for this instance type."""
         if self.instance_type_layouts:
             return self.instance_type_layouts[0].id
         return None
 
     @property
-    def default_layout(self) -> Optional[InstanceTypeLayout]:
+    def default_layout(self) -> InstanceTypeLayout | None:
         """Get the default (first) layout for this instance type."""
         if self.instance_type_layouts:
             return self.instance_type_layouts[0]
         return None
 
-    def get_layout_by_name(self, name: str) -> Optional[InstanceTypeLayout]:
+    def get_layout_by_name(self, name: str) -> InstanceTypeLayout | None:
         """
         Get a layout by name.
 
@@ -128,7 +130,7 @@ class InstanceType(Resource):
                 return layout
         return None
 
-    def get_layout_by_id(self, layout_id: int) -> Optional[InstanceTypeLayout]:
+    def get_layout_by_id(self, layout_id: int) -> InstanceTypeLayout | None:
         """
         Get a layout by ID.
 
@@ -142,4 +144,3 @@ class InstanceType(Resource):
             if layout.id == layout_id:
                 return layout
         return None
-
