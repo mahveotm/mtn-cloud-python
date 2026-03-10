@@ -7,7 +7,8 @@ Models for MTN Cloud compute instances.
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
+
 from pydantic import Field
 
 from mtn_cloud.models.base import BaseModel, Resource
@@ -33,52 +34,49 @@ class InstanceStatus(str, Enum):
 class InstanceVolume(BaseModel):
     """Volume attached to an instance."""
 
-    id: Optional[int] = None
+    id: int | None = None
     name: str = "root"
     size: int = Field(..., description="Volume size in GB")
-    storage_type: Optional[int] = Field(default=None, alias="storageType")
-    datastore_id: Optional[str] = Field(default="auto", alias="datastoreId")
+    storage_type: int | None = Field(default=None, alias="storageType")
+    datastore_id: str | None = Field(default="auto", alias="datastoreId")
     root_volume: bool = Field(default=True, alias="rootVolume")
 
 
 class InstanceNetwork(BaseModel):
     """Network interface configuration for an instance."""
 
-    id: Optional[int] = None
-    network_id: Optional[int] = Field(default=None, alias="networkId")
-    ip_address: Optional[str] = Field(default=None, alias="ipAddress")
-    ip_mode: Optional[str] = Field(default=None, alias="ipMode")
+    id: int | None = None
+    network_id: int | None = Field(default=None, alias="networkId")
+    ip_address: str | None = Field(default=None, alias="ipAddress")
+    ip_mode: str | None = Field(default=None, alias="ipMode")
 
     # Nested network object (from API response)
-    network: Optional[dict[str, Any]] = None
+    network: dict[str, Any] | None = None
 
 
 class InstanceConfig(BaseModel):
     """Instance configuration options."""
 
-    resource_pool_id: Optional[str] = Field(default=None, alias="resourcePoolId")
-    availability_zone: Optional[str] = Field(default=None, alias="availabilityZone")
-    security_group: Optional[str] = Field(default="default", alias="securityGroup")
-    os_external_network_id: Optional[str] = Field(
-        default=None,
-        alias="osExternalNetworkId"
-    )
+    resource_pool_id: str | None = Field(default=None, alias="resourcePoolId")
+    availability_zone: str | None = Field(default=None, alias="availabilityZone")
+    security_group: str | None = Field(default="default", alias="securityGroup")
+    os_external_network_id: str | None = Field(default=None, alias="osExternalNetworkId")
 
 
 class InstanceType(BaseModel):
     """Instance type information."""
 
-    id: Optional[int] = None
-    name: Optional[str] = None
-    code: Optional[str] = None
+    id: int | None = None
+    name: str | None = None
+    code: str | None = None
 
 
 class InstancePlan(BaseModel):
     """Service plan information."""
 
-    id: Optional[int] = None
-    name: Optional[str] = None
-    code: Optional[str] = None
+    id: int | None = None
+    name: str | None = None
+    code: str | None = None
 
 
 class Instance(Resource):
@@ -102,35 +100,32 @@ class Instance(Resource):
     """
 
     # Basic info
-    description: Optional[str] = Field(default=None, description="Instance description")
+    description: str | None = Field(default=None, description="Instance description")
 
     # Status
     status: str = Field(default="unknown", description="Current instance status")
-    status_message: Optional[str] = Field(
+    status_message: str | None = Field(
         default=None,
         alias="statusMessage",
         description="Status details",
     )
 
     # Type and plan
-    instance_type: Optional[InstanceType] = Field(
-        default=None,
-        alias="instanceType"
-    )
-    plan: Optional[InstancePlan] = None
-    layout: Optional[dict[str, Any]] = None
+    instance_type: InstanceType | None = Field(default=None, alias="instanceType")
+    plan: InstancePlan | None = None
+    layout: dict[str, Any] | None = None
 
     # Location
-    cloud: Optional[dict[str, Any]] = Field(default=None, description="Cloud/zone info")
-    group: Optional[dict[str, Any]] = Field(default=None, alias="site", description="Group/site info")
+    cloud: dict[str, Any] | None = Field(default=None, description="Cloud/zone info")
+    group: dict[str, Any] | None = Field(default=None, alias="site", description="Group/site info")
 
     # Network
-    ip_address: Optional[str] = Field(
+    ip_address: str | None = Field(
         default=None,
         alias="ipAddress",
         description="Primary IP address",
     )
-    external_ip: Optional[str] = Field(
+    external_ip: str | None = Field(
         default=None,
         alias="externalIp",
         description="External/floating IP address",
@@ -148,19 +143,19 @@ class Instance(Resource):
     )
 
     # Configuration
-    config: Optional[dict[str, Any]] = Field(default=None, description="Instance config")
+    config: dict[str, Any] | None = Field(default=None, description="Instance config")
 
     # Resources
-    max_memory: Optional[int] = Field(default=None, alias="maxMemory")
-    max_cores: Optional[int] = Field(default=None, alias="maxCores")
-    max_storage: Optional[int] = Field(default=None, alias="maxStorage")
+    max_memory: int | None = Field(default=None, alias="maxMemory")
+    max_cores: int | None = Field(default=None, alias="maxCores")
+    max_storage: int | None = Field(default=None, alias="maxStorage")
 
     # Labels/tags
     labels: list[str] = Field(default_factory=list, description="Instance labels")
     tags: list[dict[str, Any]] = Field(default_factory=list, description="Instance tags")
 
     # Timestamps
-    provisioned_date: Optional[datetime] = Field(default=None, alias="dateProvisioned")
+    provisioned_date: datetime | None = Field(default=None, alias="dateProvisioned")
 
     # Internal reference to resource manager (set by the SDK)
     _resource: Optional["InstancesResource"] = None
@@ -170,7 +165,7 @@ class Instance(Resource):
         object.__setattr__(self, "_resource", resource)
 
     @property
-    def primary_ip(self) -> Optional[str]:
+    def primary_ip(self) -> str | None:
         """Get the primary IP address."""
         return self.ip_address or self.external_ip
 
@@ -185,14 +180,14 @@ class Instance(Resource):
         return self.status.lower() in ("stopped", "off")
 
     @property
-    def cloud_id(self) -> Optional[int]:
+    def cloud_id(self) -> int | None:
         """Get the cloud/zone ID."""
         if self.cloud:
             return self.cloud.get("id")
         return None
 
     @property
-    def group_id(self) -> Optional[int]:
+    def group_id(self) -> int | None:
         """Get the group/site ID."""
         if self.group:
             return self.group.get("id")
@@ -265,23 +260,23 @@ class InstanceCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Instance name")
 
     # Location (one of cloud_id or zone_id required)
-    cloud_id: Optional[int] = Field(default=None, alias="zoneId", description="Cloud/zone ID")
-    group_id: Optional[int] = Field(default=None, alias="siteId", description="Group/site ID")
+    cloud_id: int | None = Field(default=None, alias="zoneId", description="Cloud/zone ID")
+    group_id: int | None = Field(default=None, alias="siteId", description="Group/site ID")
 
     # Type configuration
-    instance_type_code: Optional[str] = Field(
+    instance_type_code: str | None = Field(
         default=None,
         alias="instanceTypeCode",
         description="Instance type code (e.g., MTN-CS10)",
     )
-    layout_id: Optional[int] = Field(default=None, alias="layoutId", description="Layout ID")
-    plan_id: Optional[int] = Field(default=None, alias="planId", description="Service plan ID")
+    layout_id: int | None = Field(default=None, alias="layoutId", description="Layout ID")
+    plan_id: int | None = Field(default=None, alias="planId", description="Service plan ID")
 
     # Optional fields
-    description: Optional[str] = Field(default=None, description="Instance description")
+    description: str | None = Field(default=None, description="Instance description")
 
     # Configuration
-    config: Optional[InstanceConfig] = Field(default=None, description="Instance config")
+    config: InstanceConfig | None = Field(default=None, description="Instance config")
 
     # Storage
     volumes: list[InstanceVolume] = Field(
@@ -339,15 +334,13 @@ class InstanceCreate(BaseModel):
         # Volumes
         if self.volumes:
             payload["volumes"] = [
-                v.model_dump(by_alias=True, exclude_none=True)
-                for v in self.volumes
+                v.model_dump(by_alias=True, exclude_none=True) for v in self.volumes
             ]
 
         # Networks
         if self.network_interfaces:
             payload["networkInterfaces"] = [
-                n.model_dump(by_alias=True, exclude_none=True)
-                for n in self.network_interfaces
+                n.model_dump(by_alias=True, exclude_none=True) for n in self.network_interfaces
             ]
 
         return payload
@@ -356,9 +349,9 @@ class InstanceCreate(BaseModel):
 class InstanceUpdate(BaseModel):
     """Model for updating an instance."""
 
-    name: Optional[str] = Field(default=None, description="New instance name")
-    description: Optional[str] = Field(default=None, description="New description")
-    labels: Optional[list[str]] = Field(default=None, description="New labels")
+    name: str | None = Field(default=None, description="New instance name")
+    description: str | None = Field(default=None, description="New description")
+    labels: list[str] | None = Field(default=None, description="New labels")
 
     def to_api_payload(self) -> dict[str, Any]:
         """Convert to API request payload."""
@@ -372,4 +365,3 @@ class InstanceUpdate(BaseModel):
             instance["labels"] = self.labels
 
         return {"instance": instance}
-

@@ -5,7 +5,8 @@ Volume Models
 Models for MTN Cloud storage volumes.
 """
 
-from typing import Any, Optional
+from typing import Any
+
 from pydantic import Field
 
 from mtn_cloud.models.base import Resource
@@ -19,35 +20,35 @@ class StorageVolume(Resource):
     """
 
     # Volume details
-    description: Optional[str] = Field(default=None)
+    description: str | None = Field(default=None)
 
     # Size
-    size: Optional[int] = Field(default=None, alias="maxStorage", description="Size in bytes")
-    size_gb: Optional[int] = Field(default=None, description="Size in GB")
+    size: int | None = Field(default=None, alias="maxStorage", description="Size in bytes")
+    size_gb: int | None = Field(default=None, description="Size in GB")
 
     # Type
-    storage_type: Optional[dict[str, Any]] = Field(default=None, alias="storageType")
-    volume_type: Optional[str] = Field(default=None, alias="volumeType")
+    storage_type: dict[str, Any] | None = Field(default=None, alias="storageType")
+    volume_type: str | None = Field(default=None, alias="volumeType")
 
     # Status
-    status: Optional[str] = Field(default=None, description="Volume status")
+    status: str | None = Field(default=None, description="Volume status")
 
     # Attachment
-    instance_id: Optional[int] = Field(default=None, alias="instanceId")
-    device_name: Optional[str] = Field(default=None, alias="deviceName")
+    instance_id: int | None = Field(default=None, alias="instanceId")
+    device_name: str | None = Field(default=None, alias="deviceName")
 
     # Root volume
     root_volume: bool = Field(default=False, alias="rootVolume")
 
     # Datastore
-    datastore: Optional[dict[str, Any]] = Field(default=None)
-    datastore_id: Optional[str] = Field(default=None, alias="datastoreId")
+    datastore: dict[str, Any] | None = Field(default=None)
+    datastore_id: str | None = Field(default=None, alias="datastoreId")
 
     # Cloud/Zone
-    zone: Optional[dict[str, Any]] = Field(default=None)
+    zone: dict[str, Any] | None = Field(default=None)
 
     # External reference
-    external_id: Optional[str] = Field(default=None, alias="externalId")
+    external_id: str | None = Field(default=None, alias="externalId")
 
     @property
     def is_attached(self) -> bool:
@@ -57,4 +58,3 @@ class StorageVolume(Resource):
 
 # Alias for backwards compatibility
 Volume = StorageVolume
-

@@ -6,9 +6,7 @@ Low-level HTTP client with retry logic, error handling, and authentication.
 """
 
 import logging
-import time
-from typing import Any, Optional, Literal
-from urllib.parse import urljoin
+from typing import Any, Literal
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -16,13 +14,15 @@ from urllib3.util.retry import Retry
 
 from mtn_cloud.config import MTNCloudConfig
 from mtn_cloud.exceptions import (
-    MTNCloudError,
     AuthenticationError,
     ForbiddenError,
+    MTNCloudError,
     NotFoundError,
-    ValidationError,
     RateLimitError,
     ServerError,
+    ValidationError,
+)
+from mtn_cloud.exceptions import (
     TimeoutError as MTNTimeoutError,
 )
 
@@ -52,8 +52,8 @@ class HTTPClient:
             config: SDK configuration
         """
         self.config = config
-        self._session: Optional[requests.Session] = None
-        self._token: Optional[str] = None
+        self._session: requests.Session | None = None
+        self._token: str | None = None
 
         # Initialize token from config
         if config.token:
@@ -84,11 +84,13 @@ class HTTPClient:
         session.mount("https://", adapter)
 
         # Set default headers
-        session.headers.update({
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "User-Agent": self.config.user_agent,
-        })
+        session.headers.update(
+            {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "User-Agent": self.config.user_agent,
+            }
+        )
 
         # SSL verification
         session.verify = self.config.verify_ssl
@@ -143,13 +145,14 @@ class HTTPClient:
                 )
 
             result = response.json()
-            self._token = result["access_token"]
+            token: str = result["access_token"]
+            self._token = token
 
             logger.debug("Successfully authenticated")
-            return self._token
+            return token
 
         except requests.exceptions.RequestException as e:
-            raise AuthenticationError(f"Authentication request failed: {e}")
+            raise AuthenticationError(f"Authentication request failed: {e}") from e
 
     def _get_headers(self) -> dict[str, str]:
         """Get request headers with authentication."""
@@ -162,11 +165,11 @@ class HTTPClient:
         self,
         method: HTTPMethod,
         path: str,
-        params: Optional[dict[str, Any]] = None,
-        json: Optional[dict[str, Any]] = None,
-        data: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, str]] = None,
-        timeout: Optional[float] = None,
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        timeout: float | None = None,
     ) -> dict[str, Any]:
         """
         Make an HTTP request to the MTN Cloud API.
@@ -216,15 +219,15 @@ class HTTPClient:
 
             return self._handle_response(response)
 
-        except requests.exceptions.Timeout:
+        except requests.exceptions.Timeout as e:
             raise MTNTimeoutError(
                 f"Request to {path} timed out",
                 timeout=request_timeout,
-            )
+            ) from e
         except requests.exceptions.ConnectionError as e:
-            raise MTNCloudError(f"Connection error: {e}")
+            raise MTNCloudError(f"Connection error: {e}") from e
         except requests.exceptions.RequestException as e:
-            raise MTNCloudError(f"Request failed: {e}")
+            raise MTNCloudError(f"Request failed: {e}") from e
 
     def _build_url(self, path: str) -> str:
         """Build full URL from path."""
@@ -334,11 +337,7 @@ class HTTPClient:
 
         # Check for nested errors
         if "errors" in body and isinstance(body["errors"], list):
-            messages = [
-                e.get("message", str(e))
-                for e in body["errors"]
-                if isinstance(e, dict)
-            ]
+            messages = [e.get("message", str(e)) for e in body["errors"] if isinstance(e, dict)]
             if messages:
                 return "; ".join(messages)
 
@@ -348,7 +347,7 @@ class HTTPClient:
     def get(
         self,
         path: str,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Make a GET request."""
@@ -357,7 +356,7 @@ class HTTPClient:
     def post(
         self,
         path: str,
-        json: Optional[dict[str, Any]] = None,
+        json: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Make a POST request."""
@@ -366,7 +365,7 @@ class HTTPClient:
     def put(
         self,
         path: str,
-        json: Optional[dict[str, Any]] = None,
+        json: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Make a PUT request."""
@@ -375,7 +374,7 @@ class HTTPClient:
     def patch(
         self,
         path: str,
-        json: Optional[dict[str, Any]] = None,
+        json: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Make a PATCH request."""
@@ -384,7 +383,7 @@ class HTTPClient:
     def delete(
         self,
         path: str,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Make a DELETE request."""
@@ -401,4 +400,3 @@ class HTTPClient:
 
     def __exit__(self, *args: Any) -> None:
         self.close()
-

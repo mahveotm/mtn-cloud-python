@@ -8,19 +8,18 @@ Resource manager for MTN Cloud instances.
 from __future__ import annotations
 
 import time
-from typing import Any, Optional, Union, List
+from typing import Any, Dict, List
 
-from mtn_cloud.http import HTTPClient
-from mtn_cloud.resources.base import BaseResource
+from mtn_cloud.exceptions import NotFoundError, TimeoutError
 from mtn_cloud.models.instance import (
     Instance,
+    InstanceConfig,
     InstanceCreate,
+    InstanceNetwork,
     InstanceUpdate,
     InstanceVolume,
-    InstanceNetwork,
-    InstanceConfig,
 )
-from mtn_cloud.exceptions import NotFoundError, TimeoutError
+from mtn_cloud.resources.base import BaseResource
 
 
 class InstancesResource(BaseResource[Instance]):
@@ -76,16 +75,16 @@ class InstancesResource(BaseResource[Instance]):
 
     def list(
         self,
-        max_results: Optional[int] = None,
+        max_results: int | None = None,
         offset: int = 0,
-        sort: Optional[str] = None,
-        direction: Optional[str] = None,
-        phrase: Optional[str] = None,
-        name: Optional[str] = None,
-        status: Optional[str] = None,
-        cloud_id: Optional[int] = None,
-        group_id: Optional[int] = None,
-        labels: Optional[list[str]] = None,
+        sort: str | None = None,
+        direction: str | None = None,
+        phrase: str | None = None,
+        name: str | None = None,
+        status: str | None = None,
+        cloud_id: int | None = None,
+        group_id: int | None = None,
+        labels: list[str] | None = None,
         **filters: Any,
     ) -> list[Instance]:
         """
@@ -171,11 +170,11 @@ class InstancesResource(BaseResource[Instance]):
         instance_type_code: str,
         layout_id: int,
         plan_id: int,
-        description: Optional[str] = None,
-        config: Optional[Union[InstanceConfig, dict[str, Any]]] = None,
-        volumes: Optional[list[Union[InstanceVolume, dict[str, Any]]]] = None,
-        network_interfaces: Optional[list[Union[InstanceNetwork, dict[str, Any]]]] = None,
-        labels: Optional[list[str]] = None,
+        description: str | None = None,
+        config: InstanceConfig | Dict[str, Any] | None = None,
+        volumes: List[InstanceVolume | Dict[str, Any]] | None = None,
+        network_interfaces: List[InstanceNetwork | Dict[str, Any]] | None = None,
+        labels: List[str] | None = None,
     ) -> Instance:
         """
         Create a new instance.
@@ -224,17 +223,21 @@ class InstancesResource(BaseResource[Instance]):
         if config and isinstance(config, dict):
             config = InstanceConfig.model_validate(config)
 
-        if volumes:
-            volumes = [
-                InstanceVolume.model_validate(v) if isinstance(v, dict) else v
-                for v in volumes
-            ]
+        converted_volumes: list[InstanceVolume] = []
+        if volumes is not None:
+            for v in volumes:
+                if isinstance(v, dict):
+                    converted_volumes.append(InstanceVolume.model_validate(v))
+                else:
+                    converted_volumes.append(v)
 
-        if network_interfaces:
-            network_interfaces = [
-                InstanceNetwork.model_validate(n) if isinstance(n, dict) else n
-                for n in network_interfaces
-            ]
+        converted_network_interfaces: list[InstanceNetwork] = []
+        if network_interfaces is not None:
+            for n in network_interfaces:
+                if isinstance(n, dict):
+                    converted_network_interfaces.append(InstanceNetwork.model_validate(n))
+                else:
+                    converted_network_interfaces.append(n)
 
         # Build create model
         create_model = InstanceCreate(
@@ -245,9 +248,9 @@ class InstancesResource(BaseResource[Instance]):
             layout_id=layout_id,
             plan_id=plan_id,
             description=description,
-            config=config,
-            volumes=volumes or [],
-            network_interfaces=network_interfaces or [],
+            config=config if isinstance(config, InstanceConfig) else None,
+            volumes=converted_volumes,
+            network_interfaces=converted_network_interfaces,
             labels=labels or [],
         )
 
@@ -257,9 +260,9 @@ class InstancesResource(BaseResource[Instance]):
     def update(
         self,
         instance_id: int,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        labels: Optional[list[str]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        labels: List[str] | None = None,
     ) -> Instance:
         """
         Update an instance.
@@ -379,11 +382,7 @@ class InstancesResource(BaseResource[Instance]):
             Updated instance
         """
         path = f"{self._path}/{instance_id}/resize"
-        payload = {
-            "instance": {
-                "plan": {"id": plan_id}
-            }
-        }
+        payload = {"instance": {"plan": {"id": plan_id}}}
         self._http.put(path, json=payload)
         return self.get(instance_id)
 
@@ -484,8 +483,8 @@ class InstancesResource(BaseResource[Instance]):
     def get_history(
         self,
         instance_id: int,
-        max_results: Optional[int] = None,
-    ) -> list[dict[str, Any]]:
+        max_results: int | None = None,
+    ) -> List[Dict[str, Any]]:
         """
         Get instance history/events.
 
@@ -497,10 +496,10 @@ class InstancesResource(BaseResource[Instance]):
             List of history events
         """
         path = f"{self._path}/{instance_id}/history"
-        params = {}
+        params: Dict[str, Any] = {}
         if max_results:
             params["max"] = max_results
 
         response = self._http.get(path, params=params)
-        return response.get("processes", [])
-
+        result: List[Dict[str, Any]] = response.get("processes", [])
+        return result

@@ -9,7 +9,7 @@ Run with:
     python examples/basic_usage.py
 """
 
-from mtn_cloud import MTNCloud, MTNCloudError, NotFoundError
+from mtn_cloud import MTNCloud, MTNCloudError
 
 
 def main():
@@ -92,4 +92,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

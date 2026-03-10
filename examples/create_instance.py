@@ -9,8 +9,8 @@ Run with:
     python examples/create_instance.py
 """
 
-from mtn_cloud import MTNCloud, MTNCloudError
-from mtn_cloud.models.instance import InstanceConfig, InstanceVolume, InstanceNetwork
+from mtn_cloud import MTNCloud
+from mtn_cloud.models.instance import InstanceConfig, InstanceNetwork, InstanceVolume
 
 
 def main():
@@ -51,13 +51,13 @@ def main():
 
     # NOTE: You'll need to adjust these values for your environment
     # These are example values - get real ones from your MTN Cloud console
-    config = InstanceConfig(
-        resource_pool_id="pool-214",           # Your resource pool
-        availability_zone="Lagos-AZ-1-fd1",    # Your availability zone
+    _config = InstanceConfig(
+        resource_pool_id="pool-214",  # Your resource pool
+        availability_zone="Lagos-AZ-1-fd1",  # Your availability zone
         security_group="default",
     )
 
-    volumes = [
+    _volumes = [
         InstanceVolume(
             name="root",
             size=20,  # 20 GB
@@ -65,9 +65,9 @@ def main():
         ),
     ]
 
-    network_interfaces = []
+    _network_interfaces = []
     if network:
-        network_interfaces.append(
+        _network_interfaces.append(
             InstanceNetwork(
                 network_id=network.id,
                 # ip_address="192.168.100.50",  # Optional: static IP
@@ -75,7 +75,7 @@ def main():
         )
 
     print(f"   Instance name: {instance_name}")
-    print(f"   Root volume: 20GB")
+    print("   Root volume: 20GB")
 
     # Create the instance
     print("\n3. Creating instance...")
@@ -124,4 +124,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

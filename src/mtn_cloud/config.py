@@ -6,9 +6,8 @@ Configuration management using pydantic-settings.
 Supports environment variables and explicit configuration.
 """
 
-from typing import Optional
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class MTNCloudConfig(BaseSettings):
@@ -49,17 +48,17 @@ class MTNCloudConfig(BaseSettings):
     )
 
     # Authentication
-    token: Optional[str] = Field(
+    token: str | None = Field(
         default=None,
         description="MTN Cloud API access token",
     )
 
-    username: Optional[str] = Field(
+    username: str | None = Field(
         default=None,
         description="MTN Cloud username (alternative to token)",
     )
 
-    password: Optional[str] = Field(
+    password: str | None = Field(
         default=None,
         description="MTN Cloud password (use with username)",
     )
@@ -142,4 +141,3 @@ class MTNCloudConfig(BaseSettings):
 
 # Default configuration instance
 default_config = MTNCloudConfig()
-

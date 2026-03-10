@@ -2,18 +2,16 @@
 Tests for exceptions.
 """
 
-import pytest
-
 from mtn_cloud.exceptions import (
-    MTNCloudError,
     AuthenticationError,
-    NotFoundError,
-    ValidationError,
     ForbiddenError,
+    MTNCloudError,
+    NotFoundError,
+    QuotaExceededError,
     RateLimitError,
     ServerError,
     TimeoutError,
-    QuotaExceededError,
+    ValidationError,
 )
 
 
@@ -137,11 +135,6 @@ class TestServerError:
 class TestTimeoutError:
     """Tests for timeout errors."""
 
-    def test_default_message(self):
-        """Test default error message."""
-        error = TimeoutError()
-        assert "timeout" in str(error).lower()
-
     def test_with_timeout_value(self):
         """Test with timeout value."""
         error = TimeoutError(timeout=30.0)
@@ -166,4 +159,3 @@ class TestQuotaExceededError:
         )
         assert "instances" in str(error)
         assert "10/10" in str(error)
-

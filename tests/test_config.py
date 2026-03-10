@@ -3,8 +3,9 @@ Tests for configuration.
 """
 
 import os
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from mtn_cloud.config import MTNCloudConfig
 
@@ -116,4 +117,3 @@ class TestMTNCloudConfig:
         # Too high
         with pytest.raises(ValueError):
             MTNCloudConfig(max_retries=20)
-

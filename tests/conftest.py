@@ -2,8 +2,9 @@
 Test configuration and fixtures.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from mtn_cloud import MTNCloud, MTNCloudConfig
 from mtn_cloud.http import HTTPClient
@@ -23,7 +24,7 @@ def mock_config():
 @pytest.fixture
 def mock_http_client(mock_config):
     """Create a mocked HTTP client."""
-    with patch.object(HTTPClient, '_create_session') as mock_session:
+    with patch.object(HTTPClient, "_create_session") as mock_session:
         mock_session.return_value = MagicMock()
         client = HTTPClient(mock_config)
         client._token = "test-token-12345"
@@ -33,7 +34,7 @@ def mock_http_client(mock_config):
 @pytest.fixture
 def cloud_client(mock_config, mock_http_client):
     """Create a MTNCloud client with mocked HTTP."""
-    with patch('mtn_cloud.client.HTTPClient') as MockHTTP:
+    with patch("mtn_cloud.client.HTTPClient") as MockHTTP:
         MockHTTP.return_value = mock_http_client
         client = MTNCloud(config=mock_config)
         client._http = mock_http_client
@@ -95,4 +96,3 @@ SAMPLE_USER = {
     "firstName": "Test",
     "lastName": "User",
 }
-

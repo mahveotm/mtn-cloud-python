@@ -23,10 +23,6 @@ A community-maintained Python SDK for [MTN Cloud](https://console.cloud.mtn.ng) 
 pip install mtn-cloud
 ```
 
-For CLI support:
-```bash
-pip install mtn-cloud[cli]
-```
 
 ## Quick Start
 
@@ -370,21 +366,6 @@ Main client class.
 git clone https://github.com/mahveotm/mtn-cloud-python
 cd mtn-cloud-python
 pip install -e ".[dev]"
-
-# Install pre-commit hooks
-pre-commit install
-```
-
-### Pre-commit Hooks
-
-This project uses pre-commit hooks to ensure code quality. Once installed, hooks run automatically on `git commit`:
-
-```bash
-# Run hooks manually on all files
-pre-commit run --all-files
-
-# Update hooks to latest versions
-pre-commit autoupdate
 ```
 
 ### Running Tests

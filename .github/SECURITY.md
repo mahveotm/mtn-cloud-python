@@ -17,3 +17,7 @@ If you discover a security vulnerability within this project, please report it b
 
 We take security seriously and will respond as quickly as possible to address any issues.
 
+## MTN Cloud Service Issues
+
+If you discover a security vulnerability with the MTN Cloud service itself (not this SDK), please contact MTN directly at letstalk.ng@mtn.com.
+

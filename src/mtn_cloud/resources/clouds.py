@@ -5,11 +5,13 @@ Clouds Resource
 Resource manager for MTN Cloud clouds (zones).
 """
 
-from typing import Any, Optional
+from __future__ import annotations
 
-from mtn_cloud.resources.base import BaseResource
-from mtn_cloud.models.cloud import Cloud
+from typing import Any, List
+
 from mtn_cloud.exceptions import NotFoundError
+from mtn_cloud.models.cloud import Cloud
+from mtn_cloud.resources.base import BaseResource
 
 
 class CloudsResource(BaseResource[Cloud]):
@@ -39,15 +41,15 @@ class CloudsResource(BaseResource[Cloud]):
 
     def list(
         self,
-        max_results: Optional[int] = None,
+        max_results: int | None = None,
         offset: int = 0,
-        sort: Optional[str] = None,
-        direction: Optional[str] = None,
-        phrase: Optional[str] = None,
-        name: Optional[str] = None,
-        group_id: Optional[int] = None,
+        sort: str | None = None,
+        direction: str | None = None,
+        phrase: str | None = None,
+        name: str | None = None,
+        group_id: int | None = None,
         **filters: Any,
-    ) -> list[Cloud]:
+    ) -> List[Cloud]:
         """
         List clouds.
 
@@ -114,7 +116,7 @@ class CloudsResource(BaseResource[Cloud]):
             )
         return clouds[0]
 
-    def list_by_group(self, group_id: int) -> list[Cloud]:
+    def list_by_group(self, group_id: int) -> List[Cloud]:
         """
         List all clouds in a specific group.
 
@@ -125,4 +127,3 @@ class CloudsResource(BaseResource[Cloud]):
             List of clouds in the group
         """
         return self.list(group_id=group_id)
-

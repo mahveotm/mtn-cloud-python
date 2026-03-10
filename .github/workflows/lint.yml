@@ -8,7 +8,7 @@ on:
   pull_request:
 
 jobs:
-  pre-commit:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,9 +18,16 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install pre-commit
-        run: pip install pre-commit
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff mypy pydantic pydantic-settings types-requests
 
-      - name: Run pre-commit
-        run: pre-commit run --all-files --show-diff-on-failure
+      - name: Ruff check
+        run: ruff check src tests
 
+      - name: Ruff format check
+        run: ruff format src tests --check
+
+      - name: Type check with mypy
+        run: mypy src/mtn_cloud --ignore-missing-imports

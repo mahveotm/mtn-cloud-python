@@ -6,7 +6,8 @@ Models for MTN Cloud clouds (zones).
 """
 
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
+
 from pydantic import Field
 
 from mtn_cloud.models.base import Resource
@@ -43,56 +44,50 @@ class Cloud(Resource):
     """
 
     # Cloud details
-    description: Optional[str] = Field(default=None)
-    code: Optional[str] = Field(default=None)
+    description: str | None = Field(default=None)
+    code: str | None = Field(default=None)
 
     # Type
-    zone_type: Optional[dict[str, Any]] = Field(
+    zone_type: dict[str, Any] | None = Field(
         default=None,
         alias="zoneType",
         description="Cloud type info",
     )
-    cloud_type: Optional[str] = Field(
+    cloud_type: str | None = Field(
         default=None,
         alias="cloudType",
         description="Cloud type code",
     )
 
     # Location
-    location: Optional[str] = Field(default=None)
-    region_code: Optional[str] = Field(default=None, alias="regionCode")
+    location: str | None = Field(default=None)
+    region_code: str | None = Field(default=None, alias="regionCode")
 
     # Status
-    status: Optional[str] = Field(default=None)
+    status: str | None = Field(default=None)
     enabled: bool = Field(default=True)
-    visibility: Optional[str] = Field(default=None)
+    visibility: str | None = Field(default=None)
 
     # Account
-    account_id: Optional[int] = Field(default=None, alias="accountId")
-    account: Optional[dict[str, Any]] = Field(default=None)
+    account_id: int | None = Field(default=None, alias="accountId")
+    account: dict[str, Any] | None = Field(default=None)
 
     # Groups
-    groups: list[dict[str, Any]] = Field(
-        default_factory=list,
-        description="Associated groups"
-    )
+    groups: list[dict[str, Any]] = Field(default_factory=list, description="Associated groups")
 
     # Stats
-    server_count: Optional[int] = Field(default=None, alias="serverCount")
+    server_count: int | None = Field(default=None, alias="serverCount")
 
     # Config
-    config: Optional[dict[str, Any]] = Field(default=None)
+    config: dict[str, Any] | None = Field(default=None)
 
     # Features
-    auto_recover_power_state: bool = Field(
-        default=False,
-        alias="autoRecoverPowerState"
-    )
-    scale_priority: Optional[int] = Field(default=None, alias="scalePriority")
+    auto_recover_power_state: bool = Field(default=False, alias="autoRecoverPowerState")
+    scale_priority: int | None = Field(default=None, alias="scalePriority")
 
     # Costs
-    cost_status: Optional[str] = Field(default=None, alias="costStatus")
-    cost_last_sync: Optional[str] = Field(default=None, alias="costLastSync")
+    cost_status: str | None = Field(default=None, alias="costStatus")
+    cost_last_sync: str | None = Field(default=None, alias="costLastSync")
 
     @property
     def is_enabled(self) -> bool:
@@ -105,9 +100,8 @@ class Cloud(Resource):
         return [g["id"] for g in self.groups if "id" in g]
 
     @property
-    def type_code(self) -> Optional[str]:
+    def type_code(self) -> str | None:
         """Get the cloud type code."""
         if self.zone_type:
             return self.zone_type.get("code")
         return self.cloud_type
-

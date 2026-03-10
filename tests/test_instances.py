@@ -2,20 +2,18 @@
 Tests for Instance models and resource.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from mtn_cloud.models.instance import (
     Instance,
+    InstanceConfig,
     InstanceCreate,
     InstanceUpdate,
-    InstanceConfig,
     InstanceVolume,
-    InstanceNetwork,
 )
 from mtn_cloud.resources.instances import InstancesResource
 
-from conftest import SAMPLE_INSTANCE, SAMPLE_INSTANCES_LIST
+from .conftest import SAMPLE_INSTANCE, SAMPLE_INSTANCES_LIST
 
 
 class TestInstanceModel:
@@ -217,7 +215,7 @@ class TestInstancesResource:
         mock_http.get.return_value = {"instance": {**SAMPLE_INSTANCE, "status": "stopped"}}
 
         resource = InstancesResource(mock_http)
-        instance = resource.stop(123)
+        _instance = resource.stop(123)
 
         mock_http.put.assert_called_with("/instances/123/stop")
 
@@ -228,7 +226,7 @@ class TestInstancesResource:
         mock_http.get.return_value = {"instance": SAMPLE_INSTANCE}
 
         resource = InstancesResource(mock_http)
-        instance = resource.restart(123)
+        _instance = resource.restart(123)
 
         mock_http.put.assert_called_with("/instances/123/restart")
 
@@ -238,10 +236,9 @@ class TestInstancesResource:
         mock_http.get.return_value = SAMPLE_INSTANCES_LIST
 
         resource = InstancesResource(mock_http)
-        instances = resource.list(status="running", cloud_id=1)
+        _instances = resource.list(status="running", cloud_id=1)
 
         call_args = mock_http.get.call_args
         params = call_args[1]["params"]
         assert params["status"] == "running"
         assert params["zoneId"] == 1
-

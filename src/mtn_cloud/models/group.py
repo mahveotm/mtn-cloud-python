@@ -5,7 +5,8 @@ Group Models
 Models for MTN Cloud groups (sites).
 """
 
-from typing import Any, Optional
+from typing import Any
+
 from pydantic import Field
 
 from mtn_cloud.models.base import Resource
@@ -30,33 +31,32 @@ class Group(Resource):
     """
 
     # Group details
-    description: Optional[str] = Field(default=None)
-    code: Optional[str] = Field(default=None)
+    description: str | None = Field(default=None)
+    code: str | None = Field(default=None)
 
     # Location
-    location: Optional[str] = Field(default=None, description="Group location")
+    location: str | None = Field(default=None, description="Group location")
 
     # Status
     active: bool = Field(default=True)
 
     # Visibility
-    visibility: Optional[str] = Field(default=None)
+    visibility: str | None = Field(default=None)
 
     # Account
-    account_id: Optional[int] = Field(default=None, alias="accountId")
+    account_id: int | None = Field(default=None, alias="accountId")
 
     # Stats
-    server_count: Optional[int] = Field(default=None, alias="serverCount")
-    instance_count: Optional[int] = Field(default=None, alias="instanceCount")
+    server_count: int | None = Field(default=None, alias="serverCount")
+    instance_count: int | None = Field(default=None, alias="instanceCount")
 
     # Clouds/Zones
     zones: list[dict[str, Any]] = Field(default_factory=list, description="Associated clouds")
 
     # Config
-    config: Optional[dict[str, Any]] = Field(default=None)
+    config: dict[str, Any] | None = Field(default=None)
 
     @property
     def cloud_ids(self) -> list[int]:
         """Get list of associated cloud IDs."""
         return [z["id"] for z in self.zones if "id" in z]
-

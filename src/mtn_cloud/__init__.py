@@ -4,10 +4,6 @@ MTN Cloud Python SDK
 
 A community-maintained Python SDK for interacting with MTN Cloud (Morpheus).
 
-⚠️ DISCLAIMER: This is an unofficial community project and is not affiliated
-with, endorsed by, or supported by MTN. This software is provided "as is",
-without warranty of any kind. Use at your own risk.
-
 Quick Start:
     ```python
     from mtn_cloud import MTNCloud
@@ -46,14 +42,14 @@ License: MIT
 from mtn_cloud.client import MTNCloud
 from mtn_cloud.config import MTNCloudConfig
 from mtn_cloud.exceptions import (
-    MTNCloudError,
     AuthenticationError,
+    ForbiddenError,
+    MTNCloudError,
     NotFoundError,
-    ValidationError,
     RateLimitError,
     ServerError,
-    ForbiddenError,
     TimeoutError,
+    ValidationError,
 )
 
 __version__ = "0.1.0"
@@ -74,4 +70,3 @@ __all__ = [
     "ForbiddenError",
     "TimeoutError",
 ]
-

@@ -5,7 +5,8 @@ User Models
 Models for MTN Cloud users.
 """
 
-from typing import Any, Optional
+from typing import Any
+
 from pydantic import Field
 
 from mtn_cloud.models.base import Resource
@@ -14,12 +15,12 @@ from mtn_cloud.models.base import Resource
 class UserRole(Resource):
     """User role."""
 
-    authority: Optional[str] = Field(default=None, description="Role authority/code")
-    description: Optional[str] = Field(default=None)
-    role_type: Optional[str] = Field(default=None, alias="roleType")
+    authority: str | None = Field(default=None, description="Role authority/code")
+    description: str | None = Field(default=None)
+    role_type: str | None = Field(default=None, alias="roleType")
     multitenant: bool = Field(default=False)
     multitenant_locked: bool = Field(default=False, alias="multitenantLocked")
-    owner_id: Optional[int] = Field(default=None, alias="ownerId")
+    owner_id: int | None = Field(default=None, alias="ownerId")
 
 
 class User(Resource):
@@ -39,21 +40,21 @@ class User(Resource):
 
     # User details
     username: str = Field(..., description="Username")
-    email: Optional[str] = Field(default=None, description="Email address")
-    display_name: Optional[str] = Field(
+    email: str | None = Field(default=None, description="Email address")
+    display_name: str | None = Field(
         default=None,
         alias="displayName",
         description="Display name",
     )
-    first_name: Optional[str] = Field(default=None, alias="firstName")
-    last_name: Optional[str] = Field(default=None, alias="lastName")
+    first_name: str | None = Field(default=None, alias="firstName")
+    last_name: str | None = Field(default=None, alias="lastName")
 
     # Account
-    account_id: Optional[int] = Field(default=None, alias="accountId")
-    account: Optional[dict[str, Any]] = Field(default=None)
+    account_id: int | None = Field(default=None, alias="accountId")
+    account: dict[str, Any] | None = Field(default=None)
 
     # Role
-    role: Optional[UserRole] = Field(default=None)
+    role: UserRole | None = Field(default=None)
     roles: list[UserRole] = Field(default_factory=list)
 
     # Status
@@ -63,18 +64,12 @@ class User(Resource):
     password_expired: bool = Field(default=False, alias="passwordExpired")
 
     # Preferences
-    linux_username: Optional[str] = Field(default=None, alias="linuxUsername")
-    windows_username: Optional[str] = Field(default=None, alias="windowsUsername")
+    linux_username: str | None = Field(default=None, alias="linuxUsername")
+    windows_username: str | None = Field(default=None, alias="windowsUsername")
 
     # Default group
-    default_group: Optional[dict[str, Any]] = Field(
-        default=None,
-        alias="defaultGroup"
-    )
-    default_cloud: Optional[dict[str, Any]] = Field(
-        default=None,
-        alias="defaultCloud"
-    )
+    default_group: dict[str, Any] | None = Field(default=None, alias="defaultGroup")
+    default_cloud: dict[str, Any] | None = Field(default=None, alias="defaultCloud")
 
     @property
     def full_name(self) -> str:
@@ -87,4 +82,3 @@ class User(Resource):
     def is_active(self) -> bool:
         """Check if user is active."""
         return self.enabled and not self.account_expired and not self.account_locked
-

@@ -5,11 +5,11 @@ Groups Resource
 Resource manager for MTN Cloud groups (sites).
 """
 
-from typing import Any, Optional
+from typing import Any
 
-from mtn_cloud.resources.base import BaseResource
-from mtn_cloud.models.group import Group
 from mtn_cloud.exceptions import NotFoundError
+from mtn_cloud.models.group import Group
+from mtn_cloud.resources.base import BaseResource
 
 
 class GroupsResource(BaseResource[Group]):
@@ -39,12 +39,12 @@ class GroupsResource(BaseResource[Group]):
 
     def list(
         self,
-        max_results: Optional[int] = None,
+        max_results: int | None = None,
         offset: int = 0,
-        sort: Optional[str] = None,
-        direction: Optional[str] = None,
-        phrase: Optional[str] = None,
-        name: Optional[str] = None,
+        sort: str | None = None,
+        direction: str | None = None,
+        phrase: str | None = None,
+        name: str | None = None,
         **filters: Any,
     ) -> list[Group]:
         """
@@ -109,4 +109,3 @@ class GroupsResource(BaseResource[Group]):
                 message=f"Group with name '{name}' not found",
             )
         return groups[0]
-

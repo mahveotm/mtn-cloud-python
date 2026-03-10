@@ -20,7 +20,7 @@ Example:
     ```
 """
 
-from typing import Any, Optional
+from typing import Any
 
 
 class MTNCloudError(Exception):
@@ -37,9 +37,9 @@ class MTNCloudError(Exception):
     def __init__(
         self,
         message: str,
-        status_code: Optional[int] = None,
-        response: Optional[dict[str, Any]] = None,
-        request_id: Optional[str] = None,
+        status_code: int | None = None,
+        response: dict[str, Any] | None = None,
+        request_id: str | None = None,
     ) -> None:
         self.message = message
         self.status_code = status_code
@@ -113,8 +113,8 @@ class NotFoundError(MTNCloudError):
     def __init__(
         self,
         message: str = "Resource not found.",
-        resource_type: Optional[str] = None,
-        resource_id: Optional[Any] = None,
+        resource_type: str | None = None,
+        resource_id: Any | None = None,
         **kwargs: Any,
     ) -> None:
         if resource_type and resource_id:
@@ -140,14 +140,13 @@ class ValidationError(MTNCloudError):
     def __init__(
         self,
         message: str = "Validation error.",
-        errors: Optional[list[dict[str, Any]]] = None,
+        errors: list[dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> None:
         self.errors = errors or []
         if self.errors:
             error_details = "; ".join(
-                f"{e.get('field', 'unknown')}: {e.get('message', 'invalid')}"
-                for e in self.errors
+                f"{e.get('field', 'unknown')}: {e.get('message', 'invalid')}" for e in self.errors
             )
             message = f"{message} {error_details}"
         super().__init__(message, status_code=400, **kwargs)
@@ -164,7 +163,7 @@ class RateLimitError(MTNCloudError):
     def __init__(
         self,
         message: str = "Rate limit exceeded. Please slow down.",
-        retry_after: Optional[int] = None,
+        retry_after: int | None = None,
         **kwargs: Any,
     ) -> None:
         self.retry_after = retry_after
@@ -205,7 +204,7 @@ class TimeoutError(MTNCloudError):
     def __init__(
         self,
         message: str = "Request timed out.",
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
         **kwargs: Any,
     ) -> None:
         self.timeout = timeout
@@ -245,9 +244,9 @@ class QuotaExceededError(MTNCloudError):
     def __init__(
         self,
         message: str = "Quota exceeded.",
-        quota_type: Optional[str] = None,
-        current: Optional[int] = None,
-        limit: Optional[int] = None,
+        quota_type: str | None = None,
+        current: int | None = None,
+        limit: int | None = None,
         **kwargs: Any,
     ) -> None:
         self.quota_type = quota_type
@@ -260,4 +259,3 @@ class QuotaExceededError(MTNCloudError):
             message = f"{quota_type} quota exceeded."
 
         super().__init__(message, status_code=402, **kwargs)
-

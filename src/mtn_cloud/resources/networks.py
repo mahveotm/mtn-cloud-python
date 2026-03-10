@@ -5,11 +5,13 @@ Networks Resource
 Resource manager for MTN Cloud networks.
 """
 
-from typing import Any, Optional
+from __future__ import annotations
 
-from mtn_cloud.resources.base import BaseResource
-from mtn_cloud.models.network import Network
+from typing import Any, List
+
 from mtn_cloud.exceptions import NotFoundError
+from mtn_cloud.models.network import Network
+from mtn_cloud.resources.base import BaseResource
 
 
 class NetworksResource(BaseResource[Network]):
@@ -37,15 +39,15 @@ class NetworksResource(BaseResource[Network]):
 
     def list(
         self,
-        max_results: Optional[int] = None,
+        max_results: int | None = None,
         offset: int = 0,
-        sort: Optional[str] = None,
-        direction: Optional[str] = None,
-        phrase: Optional[str] = None,
-        name: Optional[str] = None,
-        cloud_id: Optional[int] = None,
+        sort: str | None = None,
+        direction: str | None = None,
+        phrase: str | None = None,
+        name: str | None = None,
+        cloud_id: int | None = None,
         **filters: Any,
-    ) -> list[Network]:
+    ) -> List[Network]:
         """
         List networks.
 
@@ -91,7 +93,7 @@ class NetworksResource(BaseResource[Network]):
         """
         return super().get(network_id)
 
-    def get_by_name(self, name: str, cloud_id: Optional[int] = None) -> Network:
+    def get_by_name(self, name: str, cloud_id: int | None = None) -> Network:
         """
         Get a network by name.
 
@@ -113,7 +115,7 @@ class NetworksResource(BaseResource[Network]):
             )
         return networks[0]
 
-    def list_by_cloud(self, cloud_id: int) -> list[Network]:
+    def list_by_cloud(self, cloud_id: int) -> List[Network]:
         """
         List all networks in a specific cloud.
 
@@ -124,4 +126,3 @@ class NetworksResource(BaseResource[Network]):
             List of networks in the cloud
         """
         return self.list(cloud_id=cloud_id)
-

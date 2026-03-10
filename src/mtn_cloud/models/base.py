@@ -5,9 +5,14 @@ Base Models
 Base classes for all MTN Cloud SDK models.
 """
 
+from __future__ import annotations
+
+from collections.abc import Iterator
 from datetime import datetime
-from typing import Any, Generic, Optional, TypeVar
-from pydantic import BaseModel as PydanticBaseModel, ConfigDict, Field
+from typing import Any, Generic, TypeVar
+
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict, Field
 
 
 class BaseModel(PydanticBaseModel):
@@ -37,15 +42,15 @@ class Resource(BaseModel):
     """
 
     id: int = Field(..., description="Unique resource ID")
-    name: Optional[str] = Field(default=None, description="Resource name")
+    name: str | None = Field(default=None, description="Resource name")
 
     # Timestamps (optional as not all resources have these)
-    date_created: Optional[datetime] = Field(
+    date_created: datetime | None = Field(
         default=None,
         alias="dateCreated",
         description="Creation timestamp",
     )
-    last_updated: Optional[datetime] = Field(
+    last_updated: datetime | None = Field(
         default=None,
         alias="lastUpdated",
         description="Last update timestamp",
@@ -73,7 +78,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     items: list[T] = Field(default_factory=list, description="List of items")
 
     # Pagination metadata
-    meta: Optional[dict[str, Any]] = Field(
+    meta: dict[str, Any] | None = Field(
         default=None,
         description="Response metadata",
     )
@@ -81,8 +86,8 @@ class PaginatedResponse(BaseModel, Generic[T]):
     # Pagination info (various field names used by API)
     offset: int = Field(default=0, description="Result offset")
     max: int = Field(default=25, description="Maximum results per page")
-    size: Optional[int] = Field(default=None, description="Total number of results")
-    total: Optional[int] = Field(default=None, description="Total number of results")
+    size: int | None = Field(default=None, description="Total number of results")
+    total: int | None = Field(default=None, description="Total number of results")
 
     @property
     def total_count(self) -> int:
@@ -94,26 +99,25 @@ class PaginatedResponse(BaseModel, Generic[T]):
         """Check if there are more pages."""
         return self.offset + len(self.items) < self.total_count
 
-    def __iter__(self):
-        """Iterate over items."""
-        return iter(self.items)
-
     def __len__(self) -> int:
         """Return number of items in current page."""
         return len(self.items)
+
+    def iter_items(self) -> Iterator[T]:
+        """Iterate over items."""
+        return iter(self.items)
 
 
 class APIResponse(BaseModel):
     """Generic API response wrapper."""
 
     success: bool = Field(default=True, description="Whether the request succeeded")
-    message: Optional[str] = Field(default=None, description="Response message")
-    errors: Optional[list[dict[str, Any]]] = Field(
+    message: str | None = Field(default=None, description="Response message")
+    errors: list[dict[str, Any]] | None = Field(
         default=None,
         description="Error details if request failed",
     )
-    data: Optional[dict[str, Any]] = Field(
+    data: dict[str, Any] | None = Field(
         default=None,
         description="Response data",
     )
-

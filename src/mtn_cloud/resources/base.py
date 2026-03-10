@@ -7,7 +7,8 @@ Base class for all resource managers.
 
 from __future__ import annotations
 
-from typing import Any, Generic, Optional, TypeVar, Type
+from typing import Any, Generic, TypeVar
+
 from mtn_cloud.http import HTTPClient
 from mtn_cloud.models.base import Resource
 
@@ -28,7 +29,7 @@ class BaseResource(Generic[T]):
     """
 
     _path: str = ""
-    _model: Type[T]
+    _model: type[T]
     _name: str = "resource"
     _list_key: str = "items"
     _item_key: str = "item"
@@ -72,11 +73,11 @@ class BaseResource(Generic[T]):
 
     def list(
         self,
-        max_results: Optional[int] = None,
+        max_results: int | None = None,
         offset: int = 0,
-        sort: Optional[str] = None,
-        direction: Optional[str] = None,
-        phrase: Optional[str] = None,
+        sort: str | None = None,
+        direction: str | None = None,
+        phrase: str | None = None,
         **filters: Any,
     ) -> list[T]:
         """
@@ -157,7 +158,7 @@ class BaseResource(Generic[T]):
     def _delete(
         self,
         resource_id: int,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> bool:
         """
         Delete a resource.
@@ -193,4 +194,3 @@ class BaseResource(Generic[T]):
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}>"
-

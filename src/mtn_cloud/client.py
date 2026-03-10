@@ -5,15 +5,15 @@ MTN Cloud Client
 Main client class for interacting with MTN Cloud.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from mtn_cloud.config import MTNCloudConfig
 from mtn_cloud.http import HTTPClient
 from mtn_cloud.models.user import User
+from mtn_cloud.resources.clouds import CloudsResource
+from mtn_cloud.resources.groups import GroupsResource
 from mtn_cloud.resources.instances import InstancesResource
 from mtn_cloud.resources.networks import NetworksResource
-from mtn_cloud.resources.groups import GroupsResource
-from mtn_cloud.resources.clouds import CloudsResource
 from mtn_cloud.resources.plans import PlansResource
 
 
@@ -71,13 +71,13 @@ class MTNCloud:
 
     def __init__(
         self,
-        token: Optional[str] = None,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        url: Optional[str] = None,
-        timeout: Optional[float] = None,
+        token: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
+        url: str | None = None,
+        timeout: float | None = None,
         verify_ssl: bool = True,
-        config: Optional[MTNCloudConfig] = None,
+        config: MTNCloudConfig | None = None,
     ) -> None:
         """
         Initialize the MTN Cloud client.
@@ -116,11 +116,11 @@ class MTNCloud:
         self._http = HTTPClient(self._config)
 
         # Initialize resource managers
-        self._instances: Optional[InstancesResource] = None
-        self._networks: Optional[NetworksResource] = None
-        self._groups: Optional[GroupsResource] = None
-        self._clouds: Optional[CloudsResource] = None
-        self._plans: Optional[PlansResource] = None
+        self._instances: InstancesResource | None = None
+        self._networks: NetworksResource | None = None
+        self._groups: GroupsResource | None = None
+        self._clouds: CloudsResource | None = None
+        self._plans: PlansResource | None = None
 
     @property
     def instances(self) -> InstancesResource:
@@ -276,4 +276,3 @@ class MTNCloud:
 
     def __repr__(self) -> str:
         return f"<MTNCloud url={self._config.url!r}>"
-
