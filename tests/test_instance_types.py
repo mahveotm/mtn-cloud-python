@@ -7,7 +7,6 @@ from unittest.mock import MagicMock
 from mtn_cloud.models.instance_type import InstanceType, InstanceTypeLayout
 from mtn_cloud.resources.instance_types import InstanceTypesResource
 
-
 # Sample instance type data matching MTN Cloud API response
 SAMPLE_INSTANCE_TYPE = {
     "id": 104,
@@ -73,7 +72,11 @@ SAMPLE_INSTANCE_TYPES_LIST = {
             "featured": False,
             "versions": ["v24.04"],
             "instanceTypeLayouts": [
-                {"id": 309, "name": "MTN-Ubuntu Server 24.04.3LTS", "provisionTypeCode": "openstack"}
+                {
+                    "id": 309,
+                    "name": "MTN-Ubuntu Server 24.04.3LTS",
+                    "provisionTypeCode": "openstack",
+                }
             ],
         },
         {
@@ -90,7 +93,11 @@ SAMPLE_INSTANCE_TYPES_LIST = {
             "featured": False,
             "versions": ["1"],
             "instanceTypeLayouts": [
-                {"id": 375, "name": "Unmanaged Single Node MySQL", "provisionTypeCode": "openstack"}
+                {
+                    "id": 375,
+                    "name": "Unmanaged Single Node MySQL",
+                    "provisionTypeCode": "openstack",
+                }
             ],
         },
     ],
@@ -103,7 +110,11 @@ class TestInstanceTypeLayoutModel:
 
     def test_parse_layout(self):
         """Test parsing layout from API response."""
-        layout_data = {"id": 327, "name": "MTN-CentOS Stream 10", "provisionTypeCode": "openstack"}
+        layout_data = {
+            "id": 327,
+            "name": "MTN-CentOS Stream 10",
+            "provisionTypeCode": "openstack",
+        }
         layout = InstanceTypeLayout.model_validate(layout_data)
 
         assert layout.id == 327
@@ -112,7 +123,9 @@ class TestInstanceTypeLayoutModel:
 
     def test_layout_str(self):
         """Test layout string representation."""
-        layout = InstanceTypeLayout(id=327, name="MTN-CentOS Stream 10", provisionTypeCode="openstack")
+        layout = InstanceTypeLayout(
+            id=327, name="MTN-CentOS Stream 10", provisionTypeCode="openstack"
+        )
         assert "327" in str(layout)
         assert "MTN-CentOS Stream 10" in str(layout)
 
@@ -310,4 +323,3 @@ class TestInstanceTypesResource:
         call_args = mock_http.get.call_args
         params = call_args[1]["params"]
         assert params["category"] == "apps"
-

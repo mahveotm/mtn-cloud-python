@@ -155,7 +155,7 @@ class InstanceTypesResource(BaseResource[InstanceType]):
             )
         return instance_types[0]
 
-    def list_os(self) -> list[InstanceType]:
+    def list_os(self) -> List[InstanceType]:
         """
         List operating system instance types.
 
@@ -164,7 +164,7 @@ class InstanceTypesResource(BaseResource[InstanceType]):
         """
         return self.list(category="os")
 
-    def list_databases(self) -> list[InstanceType]:
+    def list_databases(self) -> List[InstanceType]:
         """
         List database instance types.
 
@@ -173,7 +173,7 @@ class InstanceTypesResource(BaseResource[InstanceType]):
         """
         return self.list(category="sql")
 
-    def list_web(self) -> list[InstanceType]:
+    def list_web(self) -> List[InstanceType]:
         """
         List web server instance types.
 
@@ -182,7 +182,7 @@ class InstanceTypesResource(BaseResource[InstanceType]):
         """
         return self.list(category="web")
 
-    def list_apps(self) -> list[InstanceType]:
+    def list_apps(self) -> List[InstanceType]:
         """
         List application instance types.
 
@@ -190,4 +190,3 @@ class InstanceTypesResource(BaseResource[InstanceType]):
             List of application instance types
         """
         return self.list(category="apps")
-
