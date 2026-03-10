@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 
 from mtn_cloud.models.instance import (
     Instance,
-    InstanceConfig,
     InstanceCreate,
+    InstanceNetwork,
     InstanceUpdate,
     InstanceVolume,
 )
@@ -55,55 +55,58 @@ class TestInstanceCreate:
     """Tests for InstanceCreate model."""
 
     def test_create_payload(self):
-        """Test converting create model to API payload."""
+        """Test converting create model to API payload for MTN Cloud."""
         create = InstanceCreate(
-            name="new-instance",
-            cloud_id=1,
-            group_id=1,
-            instance_type_code="MTN-CS10",
-            layout_id=327,
-            plan_id=6923,
+            name="MyInstanceName",
+            cloud="MTNNG_CLOUD_AZ_1",
+            type="MTN-CS10",
+            group="MTNNG_CLOUD_AZ_1",
+            layout=327,
+            plan=6923,
         )
 
         payload = create.to_api_payload()
 
-        assert payload["instance"]["name"] == "new-instance"
-        assert payload["zoneId"] == 1
+        assert payload["instance"]["name"] == "MyInstanceName"
+        assert payload["instance"]["cloud"] == "MTNNG_CLOUD_AZ_1"
+        assert payload["instance"]["type"] == "MTN-CS10"
         assert payload["instance"]["instanceType"]["code"] == "MTN-CS10"
         assert payload["instance"]["layout"]["id"] == 327
         assert payload["instance"]["plan"]["id"] == 6923
 
-    def test_create_with_config(self):
-        """Test create payload with config."""
-        config = InstanceConfig(
-            resource_pool_id="pool-214",
-            availability_zone="Lagos-AZ-1",
-        )
+    def test_create_with_mtn_cloud_config(self):
+        """Test create payload with MTN Cloud config options."""
         create = InstanceCreate(
-            name="new-instance",
-            cloud_id=1,
-            group_id=1,
-            instance_type_code="MTN-CS10",
-            layout_id=327,
-            plan_id=6923,
-            config=config,
+            name="MyInstanceName",
+            cloud="MTNNG_CLOUD_AZ_1",
+            type="MTN-CS10",
+            group="MTNNG_CLOUD_AZ_1",
+            layout=327,
+            plan=6923,
+            resource_pool_id="pool-214",
+            availability_zone="Lagos-AZ-1-fd1",
+            security_group="default",
+            os_external_network_id="public-network-01",
         )
 
         payload = create.to_api_payload()
 
-        assert "config" in payload["instance"]
-        assert payload["instance"]["config"]["resourcePoolId"] == "pool-214"
+        assert "config" in payload
+        assert payload["config"]["resourcePoolId"] == "pool-214"
+        assert payload["config"]["availabilityZone"] == "Lagos-AZ-1-fd1"
+        assert payload["config"]["securityGroup"] == "default"
+        assert payload["config"]["osExternalNetworkId"] == "public-network-01"
 
     def test_create_with_volumes(self):
         """Test create payload with volumes."""
-        volumes = [InstanceVolume(name="root", size=20)]
+        volumes = [InstanceVolume(name="root", size=10, storage_type=11)]
         create = InstanceCreate(
-            name="new-instance",
-            cloud_id=1,
-            group_id=1,
-            instance_type_code="MTN-CS10",
-            layout_id=327,
-            plan_id=6923,
+            name="MyInstanceName",
+            cloud="MTNNG_CLOUD_AZ_1",
+            type="MTN-CS10",
+            group="MTNNG_CLOUD_AZ_1",
+            layout=327,
+            plan=6923,
             volumes=volumes,
         )
 
@@ -111,7 +114,27 @@ class TestInstanceCreate:
 
         assert "volumes" in payload
         assert payload["volumes"][0]["name"] == "root"
-        assert payload["volumes"][0]["size"] == 20
+        assert payload["volumes"][0]["size"] == 10
+        assert payload["volumes"][0]["storageType"] == 11
+
+    def test_create_with_network_interfaces(self):
+        """Test create payload with network interfaces."""
+        networks = [InstanceNetwork(network_id="network-298", ip_address="192.168.100.40")]
+        create = InstanceCreate(
+            name="MyInstanceName",
+            cloud="MTNNG_CLOUD_AZ_1",
+            type="MTN-CS10",
+            group="MTNNG_CLOUD_AZ_1",
+            layout=327,
+            plan=6923,
+            network_interfaces=networks,
+        )
+
+        payload = create.to_api_payload()
+
+        assert "networkInterfaces" in payload
+        assert payload["networkInterfaces"][0]["network"]["id"] == "network-298"
+        assert payload["networkInterfaces"][0]["ipAddress"] == "192.168.100.40"
 
 
 class TestInstanceUpdate:
@@ -168,18 +191,22 @@ class TestInstancesResource:
         mock_http.get.assert_called_with("/instances/123")
 
     def test_create_instance(self):
-        """Test creating instance."""
+        """Test creating instance on MTN Cloud."""
         mock_http = MagicMock()
         mock_http.post.return_value = {"instance": SAMPLE_INSTANCE}
 
         resource = InstancesResource(mock_http)
         instance = resource.create(
-            name="test-instance",
-            cloud_id=1,
-            group_id=1,
-            instance_type_code="MTN-CS10",
-            layout_id=327,
-            plan_id=6923,
+            name="MyInstanceName",
+            cloud="MTNNG_CLOUD_AZ_1",
+            type="MTN-CS10",
+            group="MTNNG_CLOUD_AZ_1",
+            layout=327,
+            plan=6923,
+            resource_pool_id="pool-214",
+            availability_zone="Lagos-AZ-1-fd1",
+            security_group="default",
+            os_external_network_id="public-network-01",
         )
 
         assert instance.name == "test-instance"

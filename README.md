@@ -81,7 +81,7 @@ cloud = MTNCloud(
 
 ```python
 from mtn_cloud import MTNCloud
-from mtn_cloud.models import InstanceConfig, InstanceVolume, InstanceNetwork
+from mtn_cloud.models import InstanceVolume, InstanceNetwork
 
 cloud = MTNCloud(token="xxx")
 
@@ -101,24 +101,23 @@ print(f"IP: {instance.primary_ip}")
 # Get instance by name
 instance = cloud.instances.get_by_name("my-app")
 
-# Create a new instance
+# Create a new instance on MTN Cloud
 instance = cloud.instances.create(
     name="web-server-01",
-    cloud_id=1,
-    group_id=1,
-    instance_type_code="MTN-CS10",
-    layout_id=327,
-    plan_id=6923,
-    config=InstanceConfig(
-        resource_pool_id="pool-214",
-        availability_zone="Lagos-AZ-1-fd1",
-        security_group="default",
-    ),
+    cloud="MTNNG_CLOUD_AZ_1",
+    type="MTN-CS10",
+    group="MTNNG_CLOUD_AZ_1",
+    layout=327,
+    plan=6923,
+    resource_pool_id="pool-214",
+    availability_zone="Lagos-AZ-1-fd1",
+    security_group="default",
+    os_external_network_id="public-network-01",
     volumes=[
-        InstanceVolume(name="root", size=20),
+        InstanceVolume(name="root", size=20, storage_type=11),
     ],
     network_interfaces=[
-        InstanceNetwork(network_id=298, ip_address="192.168.100.50"),
+        InstanceNetwork(network_id="network-298", ip_address="192.168.100.50"),
     ],
     labels=["production", "web"],
 )

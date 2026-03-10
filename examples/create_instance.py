@@ -10,7 +10,7 @@ Run with:
 """
 
 from mtn_cloud import MTNCloud
-from mtn_cloud.models.instance import InstanceConfig, InstanceNetwork, InstanceVolume
+from mtn_cloud.models.instance import InstanceNetwork, InstanceVolume
 
 
 def main():
@@ -51,16 +51,12 @@ def main():
 
     # NOTE: You'll need to adjust these values for your environment
     # These are example values - get real ones from your MTN Cloud console
-    _config = InstanceConfig(
-        resource_pool_id="pool-214",  # Your resource pool
-        availability_zone="Lagos-AZ-1-fd1",  # Your availability zone
-        security_group="default",
-    )
-
     _volumes = [
         InstanceVolume(
             name="root",
             size=20,  # 20 GB
+            storage_type=11,
+            datastore_id="auto",
             root_volume=True,
         ),
     ]
@@ -69,7 +65,7 @@ def main():
     if network:
         _network_interfaces.append(
             InstanceNetwork(
-                network_id=network.id,
+                network_id=f"network-{network.id}",
                 # ip_address="192.168.100.50",  # Optional: static IP
             )
         )
@@ -86,14 +82,17 @@ def main():
     # try:
     #     instance = cloud.instances.create(
     #         name=instance_name,
-    #         cloud_id=zone.id,
-    #         group_id=group.id,
-    #         instance_type_code="MTN-CS10",  # Adjust for your environment
-    #         layout_id=327,                    # Adjust for your environment
-    #         plan_id=plan.id if plan else 6923,
-    #         config=config,
-    #         volumes=volumes,
-    #         network_interfaces=network_interfaces,
+    #         cloud=zone.name,  # e.g., "MTNNG_CLOUD_AZ_1"
+    #         type="MTN-CS10",  # Adjust for your environment
+    #         group=group.name,  # e.g., "MTNNG_CLOUD_AZ_1"
+    #         layout=327,  # Adjust for your environment
+    #         plan=plan.id if plan else 6923,
+    #         resource_pool_id="pool-214",  # Your resource pool
+    #         availability_zone="Lagos-AZ-1-fd1",  # Your availability zone
+    #         security_group="default",
+    #         os_external_network_id="public-network-01",
+    #         volumes=_volumes,
+    #         network_interfaces=_network_interfaces,
     #         labels=["demo", "sdk-example"],
     #     )
     #

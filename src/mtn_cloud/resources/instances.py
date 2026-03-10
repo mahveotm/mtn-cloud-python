@@ -13,7 +13,6 @@ from typing import Any, Dict, List
 from mtn_cloud.exceptions import NotFoundError, TimeoutError
 from mtn_cloud.models.instance import (
     Instance,
-    InstanceConfig,
     InstanceCreate,
     InstanceNetwork,
     InstanceUpdate,
@@ -34,14 +33,18 @@ class InstancesResource(BaseResource[Instance]):
         # Get instance
         instance = cloud.instances.get(123)
 
-        # Create instance
+        # Create MTN Cloud instance
         instance = cloud.instances.create(
-            name="my-app",
-            cloud_id=1,
-            group_id=1,
-            instance_type_code="MTN-CS10",
-            layout_id=327,
-            plan_id=6923,
+            name="MyInstanceName",
+            cloud="MTNNG_CLOUD_AZ_1",
+            type="MTN-CS10",
+            group="MTNNG_CLOUD_AZ_1",
+            layout=327,
+            plan=6923,
+            resource_pool_id="pool-214",
+            availability_zone="Lagos-AZ-1-fd1",
+            security_group="default",
+            os_external_network_id="public-network-01",
         )
 
         # Instance actions
@@ -165,64 +168,95 @@ class InstancesResource(BaseResource[Instance]):
     def create(
         self,
         name: str,
-        cloud_id: int,
-        group_id: int,
-        instance_type_code: str,
-        layout_id: int,
-        plan_id: int,
+        *,
+        cloud: str,
+        type: str,
+        group: str,
+        layout: int,
+        plan: int,
         description: str | None = None,
-        config: InstanceConfig | Dict[str, Any] | None = None,
+        environment: str | None = None,
+        labels: List[str] | None = None,
+        tags: Dict[str, str] | None = None,
+        copies: int = 1,
+        layout_size: int = 1,
+        # MTN Cloud config options
+        resource_pool_id: str | None = None,
+        availability_zone: str | None = None,
+        security_group: str | None = None,
+        os_external_network_id: str | None = None,
+        create_user: bool = True,
+        # Automation options
+        workflow_id: int | None = None,
+        shutdown_days: int | None = None,
+        expire_days: int | None = None,
+        create_backup: bool | None = None,
+        security_groups: List[str] | None = None,
+        ports: List[Dict[str, Any]] | None = None,
         volumes: List[InstanceVolume | Dict[str, Any]] | None = None,
         network_interfaces: List[InstanceNetwork | Dict[str, Any]] | None = None,
-        labels: List[str] | None = None,
+        options: Dict[str, Any] | None = None,
     ) -> Instance:
         """
-        Create a new instance.
+        Create a new instance on MTN Cloud.
+
+        Based on the Morpheus API specification for instance provisioning.
 
         Args:
-            name: Instance name
-            cloud_id: Cloud/zone ID to deploy to
-            group_id: Group/site ID
-            instance_type_code: Instance type code (e.g., "MTN-CS10")
-            layout_id: Layout ID
-            plan_id: Service plan ID
+            name: Instance name (required)
+            cloud: Cloud name (e.g., 'MTNNG_CLOUD_AZ_1')
+            type: Instance Type code (e.g., 'MTN-CS10')
+            group: Group name (e.g., 'MTNNG_CLOUD_AZ_1')
+            layout: Layout ID (e.g., 327)
+            plan: Service plan ID (e.g., 6923)
             description: Instance description
-            config: Instance configuration
+            environment: Environment code
+            labels: Labels (keywords) list
+            tags: Metadata tags dict (e.g., {"env": "prod"})
+            copies: Number of copies to provision
+            layout_size: Multiply factor of containers/vms
+            resource_pool_id: Resource pool ID (e.g., 'pool-214')
+            availability_zone: Availability zone (e.g., 'Lagos-AZ-1-fd1')
+            security_group: Security group name (e.g., 'default')
+            os_external_network_id: External network for floating IP (e.g., 'public-network-01')
+            create_user: Create your user on the instance (default: True)
+            workflow_id: Automation workflow ID
+            shutdown_days: Automation shutdown days
+            expire_days: Automation expiration days
+            create_backup: Create backups
+            security_groups: List of security group names
+            ports: Exposed ports (list of {name, port} dicts)
             volumes: List of volumes to attach
             network_interfaces: List of network interfaces
-            labels: Labels/tags for the instance
+            options: Additional options
 
         Returns:
             Created instance
 
         Example:
             ```python
+            # MTN Cloud instance creation
             instance = cloud.instances.create(
-                name="web-server",
-                cloud_id=1,
-                group_id=1,
-                instance_type_code="MTN-CS10",
-                layout_id=327,
-                plan_id=6923,
-                config=InstanceConfig(
-                    resource_pool_id="pool-214",
-                    availability_zone="Lagos-AZ-1-fd1",
-                    security_group="default",
-                ),
+                name="MyInstanceName",
+                cloud="MTNNG_CLOUD_AZ_1",
+                type="MTN-CS10",
+                group="MTNNG_CLOUD_AZ_1",
+                layout=327,
+                plan=6923,
+                resource_pool_id="pool-214",
+                availability_zone="Lagos-AZ-1-fd1",
+                security_group="default",
+                os_external_network_id="public-network-01",
                 volumes=[
-                    InstanceVolume(name="root", size=20),
+                    InstanceVolume(name="root", size=10, storage_type=11),
                 ],
                 network_interfaces=[
-                    InstanceNetwork(network_id=298, ip_address="192.168.100.50"),
+                    InstanceNetwork(network_id="network-298", ip_address="192.168.100.40"),
                 ],
-                labels=["production", "web"],
             )
             ```
         """
-        # Convert dicts to models
-        if config and isinstance(config, dict):
-            config = InstanceConfig.model_validate(config)
-
+        # Convert volume dicts to models
         converted_volumes: list[InstanceVolume] = []
         if volumes is not None:
             for v in volumes:
@@ -231,6 +265,7 @@ class InstancesResource(BaseResource[Instance]):
                 else:
                     converted_volumes.append(v)
 
+        # Convert network dicts to models
         converted_network_interfaces: list[InstanceNetwork] = []
         if network_interfaces is not None:
             for n in network_interfaces:
@@ -239,19 +274,34 @@ class InstancesResource(BaseResource[Instance]):
                 else:
                     converted_network_interfaces.append(n)
 
-        # Build create model
+        # Build create model for MTN Cloud
         create_model = InstanceCreate(
             name=name,
-            cloud_id=cloud_id,
-            group_id=group_id,
-            instance_type_code=instance_type_code,
-            layout_id=layout_id,
-            plan_id=plan_id,
+            cloud=cloud,
+            type=type,
+            group=group,
+            layout=layout,
+            plan=plan,
             description=description,
-            config=config if isinstance(config, InstanceConfig) else None,
+            environment=environment,
+            labels=labels or [],
+            tags=tags or {},
+            copies=copies,
+            layout_size=layout_size,
+            resource_pool_id=resource_pool_id,
+            availability_zone=availability_zone,
+            security_group=security_group,
+            os_external_network_id=os_external_network_id,
+            create_user=create_user,
+            workflow_id=workflow_id,
+            shutdown_days=shutdown_days,
+            expire_days=expire_days,
+            create_backup=create_backup,
+            security_groups=security_groups,
+            ports=ports,
             volumes=converted_volumes,
             network_interfaces=converted_network_interfaces,
-            labels=labels or [],
+            options=options or {},
         )
 
         payload = create_model.to_api_payload()
