@@ -23,22 +23,19 @@ def main():
     print("\n1. Discovering available resources...")
 
     groups = cloud.groups.list()
-    clouds = cloud.clouds.list()
     plans = cloud.plans.list()
     networks = cloud.networks.list()
 
-    if not groups or not clouds:
-        print("❌ No groups or clouds available. Contact your admin.")
+    if not groups:
+        print("❌ No groups available. Contact your admin.")
         return
 
-    # Use first available group and cloud
+    # Use first available group
     group = groups[0]
-    zone = clouds[0]
     plan = plans[0] if plans else None
     network = networks[0] if networks else None
 
     print(f"   Group: {group.name} (ID: {group.id})")
-    print(f"   Cloud: {zone.name} (ID: {zone.id})")
     if plan:
         print(f"   Plan: {plan.name} (ID: {plan.id})")
     if network:

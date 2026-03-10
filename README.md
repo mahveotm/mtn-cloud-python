@@ -163,7 +163,7 @@ print(f"Gateway: {network.gateway}")
 network = cloud.networks.get_by_name("my-network")
 ```
 
-### Managing Groups and Clouds
+### Managing Groups
 
 ```python
 # List groups
@@ -172,13 +172,7 @@ for group in cloud.groups.list():
 
 # Get group by name
 group = cloud.groups.get_by_name("MTNNG_CLOUD_AZ_1")
-
-# List clouds/zones
-for c in cloud.clouds.list():
-    print(f"{c.name}: {c.type_code}")
-
-# Get cloud by name
-zone = cloud.clouds.get_by_name("MTNNG_CLOUD_AZ_1")
+print(f"Group ID: {group.id}")
 ```
 
 ### Service Plans

@@ -52,7 +52,7 @@ from mtn_cloud.exceptions import (
     ValidationError,
 )
 
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 __author__ = "Marvellous Osuolale"
 __license__ = "MIT"
 __all__ = [

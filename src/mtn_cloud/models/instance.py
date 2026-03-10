@@ -317,7 +317,7 @@ class InstanceCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Instance name")
     cloud: str = Field(..., description="Cloud name (e.g., 'MTNNG_CLOUD_AZ_1')")
     type: str = Field(..., description="Instance Type code (e.g., 'MTN-CS10')")
-    group: str = Field(..., description="Group name (e.g., 'MTNNG_CLOUD_AZ_1')")
+    group_id: int = Field(..., description="Group ID (resolved from group name)")
     layout: int = Field(..., description="Layout ID (e.g., 327)")
     plan: int = Field(..., description="Service plan ID (e.g., 6923)")
 
@@ -398,8 +398,8 @@ class InstanceCreate(BaseModel):
         # Cloud (always string name)
         instance["cloud"] = self.cloud
 
-        # Group/Site (always string name)
-        instance["site"] = {"name": self.group}
+        # Group/Site (use resolved group ID)
+        instance["site"] = {"id": self.group_id}
 
         # Instance type
         instance["type"] = self.type

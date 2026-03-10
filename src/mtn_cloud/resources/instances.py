@@ -8,7 +8,7 @@ Resource manager for MTN Cloud instances.
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from mtn_cloud.exceptions import NotFoundError, TimeoutError
 from mtn_cloud.models.instance import (
@@ -19,6 +19,9 @@ from mtn_cloud.models.instance import (
     InstanceVolume,
 )
 from mtn_cloud.resources.base import BaseResource
+
+if TYPE_CHECKING:
+    from mtn_cloud.http import HTTPClient
 
 
 class InstancesResource(BaseResource[Instance]):
@@ -183,7 +186,7 @@ class InstancesResource(BaseResource[Instance]):
         # MTN Cloud config options
         resource_pool_id: str | None = None,
         availability_zone: str | None = None,
-        security_group: str | None = None,
+        security_group: str = "default",
         os_external_network_id: str | None = None,
         create_user: bool = True,
         # Automation options
@@ -206,7 +209,7 @@ class InstancesResource(BaseResource[Instance]):
             name: Instance name (required)
             cloud: Cloud name (e.g., 'MTNNG_CLOUD_AZ_1')
             type: Instance Type code (e.g., 'MTN-CS10')
-            group: Group name (e.g., 'MTNNG_CLOUD_AZ_1')
+            group: Group name (e.g., 'MTNNG_CLOUD_AZ_1') - will be resolved to ID automatically
             layout: Layout ID (e.g., 327)
             plan: Service plan ID (e.g., 6923)
             description: Instance description
@@ -217,7 +220,7 @@ class InstancesResource(BaseResource[Instance]):
             layout_size: Multiply factor of containers/vms
             resource_pool_id: Resource pool ID (e.g., 'pool-214')
             availability_zone: Availability zone (e.g., 'Lagos-AZ-1-fd1')
-            security_group: Security group name (e.g., 'default')
+            security_group: Security group name (default: 'default')
             os_external_network_id: External network for floating IP (e.g., 'public-network-01')
             create_user: Create your user on the instance (default: True)
             workflow_id: Automation workflow ID
@@ -256,6 +259,9 @@ class InstancesResource(BaseResource[Instance]):
             )
             ```
         """
+        # Resolve group name to group ID
+        group_id = self._resolve_group_id(group)
+
         # Convert volume dicts to models
         converted_volumes: list[InstanceVolume] = []
         if volumes is not None:
@@ -279,7 +285,7 @@ class InstancesResource(BaseResource[Instance]):
             name=name,
             cloud=cloud,
             type=type,
-            group=group,
+            group_id=group_id,
             layout=layout,
             plan=plan,
             description=description,
@@ -306,6 +312,26 @@ class InstancesResource(BaseResource[Instance]):
 
         payload = create_model.to_api_payload()
         return self._create(payload)
+
+    def _resolve_group_id(self, group_name: str) -> int:
+        """
+        Resolve a group name to its ID.
+
+        Args:
+            group_name: Group name (e.g., 'MTNNG_CLOUD_AZ_1')
+
+        Returns:
+            Group ID
+
+        Raises:
+            NotFoundError: If group not found
+        """
+        # Import here to avoid circular imports
+        from mtn_cloud.resources.groups import GroupsResource
+
+        groups_resource = GroupsResource(self._http)
+        group = groups_resource.get_by_name(group_name)
+        return group.id
 
     def update(
         self,

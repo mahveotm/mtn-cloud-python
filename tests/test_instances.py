@@ -60,7 +60,7 @@ class TestInstanceCreate:
             name="MyInstanceName",
             cloud="MTNNG_CLOUD_AZ_1",
             type="MTN-CS10",
-            group="MTNNG_CLOUD_AZ_1",
+            group_id=621,  # Group ID is resolved by the resource
             layout=327,
             plan=6923,
         )
@@ -71,6 +71,7 @@ class TestInstanceCreate:
         assert payload["instance"]["cloud"] == "MTNNG_CLOUD_AZ_1"
         assert payload["instance"]["type"] == "MTN-CS10"
         assert payload["instance"]["instanceType"]["code"] == "MTN-CS10"
+        assert payload["instance"]["site"]["id"] == 621
         assert payload["instance"]["layout"]["id"] == 327
         assert payload["instance"]["plan"]["id"] == 6923
 
@@ -80,7 +81,7 @@ class TestInstanceCreate:
             name="MyInstanceName",
             cloud="MTNNG_CLOUD_AZ_1",
             type="MTN-CS10",
-            group="MTNNG_CLOUD_AZ_1",
+            group_id=621,
             layout=327,
             plan=6923,
             resource_pool_id="pool-214",
@@ -104,7 +105,7 @@ class TestInstanceCreate:
             name="MyInstanceName",
             cloud="MTNNG_CLOUD_AZ_1",
             type="MTN-CS10",
-            group="MTNNG_CLOUD_AZ_1",
+            group_id=621,
             layout=327,
             plan=6923,
             volumes=volumes,
@@ -124,7 +125,7 @@ class TestInstanceCreate:
             name="MyInstanceName",
             cloud="MTNNG_CLOUD_AZ_1",
             type="MTN-CS10",
-            group="MTNNG_CLOUD_AZ_1",
+            group_id=621,
             layout=327,
             plan=6923,
             network_interfaces=networks,
@@ -194,6 +195,10 @@ class TestInstancesResource:
         """Test creating instance on MTN Cloud."""
         mock_http = MagicMock()
         mock_http.post.return_value = {"instance": SAMPLE_INSTANCE}
+        # Mock the group lookup - groups endpoint returns the group
+        mock_http.get.return_value = {
+            "groups": [{"id": 621, "name": "MTNNG_CLOUD_AZ_1"}]
+        }
 
         resource = InstancesResource(mock_http)
         instance = resource.create(

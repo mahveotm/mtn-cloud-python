@@ -41,11 +41,6 @@ def main():
     for group in groups[:5]:
         print(f"   - {group.name} (ID: {group.id})")
 
-    # Clouds
-    clouds = cloud.clouds.list()
-    print(f"\n☁️  Clouds ({len(clouds)}):")
-    for c in clouds[:5]:
-        print(f"   - {c.name} (ID: {c.id})")
 
     # Service Plans
     plans = cloud.plans.list()

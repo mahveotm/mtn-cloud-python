@@ -10,7 +10,6 @@ from typing import Any
 from mtn_cloud.config import MTNCloudConfig
 from mtn_cloud.http import HTTPClient
 from mtn_cloud.models.user import User
-from mtn_cloud.resources.clouds import CloudsResource
 from mtn_cloud.resources.groups import GroupsResource
 from mtn_cloud.resources.instances import InstancesResource
 from mtn_cloud.resources.networks import NetworksResource
@@ -41,14 +40,14 @@ class MTNCloud:
         for instance in cloud.instances.list():
             print(f"{instance.name}: {instance.status}")
 
-        # Create an instance
+        # Create an instance on MTN Cloud
         instance = cloud.instances.create(
-            name="my-app",
-            cloud_id=1,
-            group_id=1,
-            instance_type_code="MTN-CS10",
-            layout_id=327,
-            plan_id=6923,
+            name="MyInstanceName",
+            cloud="MTNNG_CLOUD_AZ_1",
+            type="MTN-CS10",
+            group="MTNNG_CLOUD_AZ_1",
+            layout=327,
+            plan=6923,
         )
 
         # Use as context manager
@@ -60,7 +59,6 @@ class MTNCloud:
         instances: Manage compute instances
         networks: Manage networks
         groups: Manage groups (sites)
-        clouds: Manage clouds (zones)
         plans: Manage service plans
 
     Environment Variables:
@@ -119,7 +117,6 @@ class MTNCloud:
         self._instances: InstancesResource | None = None
         self._networks: NetworksResource | None = None
         self._groups: GroupsResource | None = None
-        self._clouds: CloudsResource | None = None
         self._plans: PlansResource | None = None
 
     @property
@@ -179,23 +176,6 @@ class MTNCloud:
             self._groups = GroupsResource(self._http)
         return self._groups
 
-    @property
-    def clouds(self) -> CloudsResource:
-        """
-        Access the clouds resource manager.
-
-        Example:
-            ```python
-            # List clouds
-            clouds = cloud.clouds.list()
-
-            # Get cloud
-            c = cloud.clouds.get(1)
-            ```
-        """
-        if self._clouds is None:
-            self._clouds = CloudsResource(self._http)
-        return self._clouds
 
     @property
     def plans(self) -> PlansResource:
