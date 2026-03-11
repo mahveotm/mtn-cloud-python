@@ -56,6 +56,7 @@ SAMPLE_NETWORK_TYPES = {
     ]
 }
 
+
 class TestNetworkModel:
     """Tests for Network model."""
 
