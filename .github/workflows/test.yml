@@ -75,6 +75,38 @@ jobs:
         env:
           COVERAGE_FILE: coverage/.coverage.${{ runner.os }}-py${{ matrix.python-version }}
 
+      - name: Build coverage summary
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          coverage_xml = Path("coverage/coverage.xml")
+          root = ET.parse(coverage_xml).getroot()
+
+          line_rate = float(root.attrib.get("line-rate", 0.0)) * 100
+          branch_rate = float(root.attrib.get("branch-rate", 0.0)) * 100
+          lines_covered = int(root.attrib.get("lines-covered", 0))
+          lines_valid = int(root.attrib.get("lines-valid", 0))
+
+          summary = (
+              "## Pytest Coverage\n\n"
+              f"- Line coverage: **{line_rate:.2f}%** ({lines_covered}/{lines_valid})\n"
+              f"- Branch coverage: **{branch_rate:.2f}%**\n"
+              "- Report file: `coverage/coverage.xml`\n"
+          )
+
+          Path("coverage/coverage-summary.md").write_text(summary, encoding="utf-8")
+          print(summary)
+          PY
+
+      - name: Publish coverage summary
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        shell: bash
+        run: cat coverage/coverage-summary.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload coverage
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         uses: actions/upload-artifact@v4
@@ -115,4 +147,3 @@ jobs:
         with:
           jobs: ${{ toJSON(needs) }}
           allowed-skips: test
-

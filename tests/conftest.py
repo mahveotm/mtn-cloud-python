@@ -70,6 +70,9 @@ SAMPLE_INSTANCES_LIST = {
 SAMPLE_NETWORK = {
     "id": 298,
     "name": "test-network",
+    "displayName": "test-network",
+    "type": {"id": 8, "name": "OpenStack Network", "code": "openstackNetwork"},
+    "zone": {"id": 1, "name": "MTNNG_CLOUD_AZ_1"},
     "cidr": "192.168.1.0/24",
     "gateway": "192.168.1.1",
     "active": True,
@@ -86,6 +89,8 @@ SAMPLE_CLOUD = {
     "id": 1,
     "name": "MTNNG_CLOUD_AZ_1",
     "code": "mtnng-az1",
+    "zoneType": {"id": 999, "code": "openstack", "name": "OpenStack"},
+    "cloudType": "openstack",
     "enabled": True,
 }
 

@@ -140,14 +140,32 @@ class ValidationError(MTNCloudError):
     def __init__(
         self,
         message: str = "Validation error.",
-        errors: list[dict[str, Any]] | None = None,
+        errors: list[Any] | dict[str, Any] | str | None = None,
         **kwargs: Any,
     ) -> None:
-        self.errors = errors or []
+        if errors is None:
+            normalized_errors: list[Any] = []
+        elif isinstance(errors, list):
+            normalized_errors = errors
+        else:
+            normalized_errors = [errors]
+
+        self.errors = normalized_errors
         if self.errors:
-            error_details = "; ".join(
-                f"{e.get('field', 'unknown')}: {e.get('message', 'invalid')}" for e in self.errors
-            )
+            error_parts: list[str] = []
+            for error in self.errors:
+                if isinstance(error, dict):
+                    field = (
+                        error.get("field") or error.get("name") or error.get("path") or "unknown"
+                    )
+                    error_message = (
+                        error.get("message") or error.get("msg") or error.get("error") or "invalid"
+                    )
+                    error_parts.append(f"{field}: {error_message}")
+                else:
+                    error_parts.append(str(error))
+
+            error_details = "; ".join(error_parts)
             message = f"{message} {error_details}"
         super().__init__(message, status_code=400, **kwargs)
 

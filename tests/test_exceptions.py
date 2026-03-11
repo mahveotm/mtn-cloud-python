@@ -92,6 +92,17 @@ class TestValidationError:
         assert "name" in str(error)
         assert "email" in str(error)
 
+    def test_with_string_errors_list(self):
+        """Test validation error formatting when API returns string errors."""
+        error = ValidationError(errors=["network service is required"])
+        assert "network service is required" in str(error)
+
+    def test_with_error_dict_nonstandard_keys(self):
+        """Test validation error formatting for nonstandard dict keys."""
+        error = ValidationError(errors=[{"path": "network.type", "error": "is invalid"}])
+        assert "network.type" in str(error)
+        assert "is invalid" in str(error)
+
 
 class TestForbiddenError:
     """Tests for forbidden errors."""

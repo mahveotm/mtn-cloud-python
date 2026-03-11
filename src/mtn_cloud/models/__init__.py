@@ -18,7 +18,18 @@ from mtn_cloud.models.instance import (
     InstanceVolume,
 )
 from mtn_cloud.models.instance_type import InstanceType, InstanceTypeLayout
-from mtn_cloud.models.network import Network, NetworkType
+from mtn_cloud.models.network import (
+    Network,
+    NetworkCreate,
+    NetworkFloatingIP,
+    NetworkType,
+    NetworkTypeInfo,
+    NetworkUpdate,
+    NetworkVisibility,
+    ResourcePermission,
+    ResourceReference,
+    Subnet,
+)
 from mtn_cloud.models.plan import ServicePlan
 from mtn_cloud.models.user import User, UserRole
 from mtn_cloud.models.volume import StorageVolume, Volume
@@ -42,6 +53,14 @@ __all__ = [
     # Network
     "Network",
     "NetworkType",
+    "NetworkVisibility",
+    "ResourceReference",
+    "ResourcePermission",
+    "Subnet",
+    "NetworkFloatingIP",
+    "NetworkTypeInfo",
+    "NetworkCreate",
+    "NetworkUpdate",
     # Volume
     "Volume",
     "StorageVolume",
