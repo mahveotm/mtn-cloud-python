@@ -10,6 +10,7 @@ from typing import Any
 from mtn_cloud.config import MTNCloudConfig
 from mtn_cloud.http import HTTPClient
 from mtn_cloud.models.user import User
+from mtn_cloud.resources.clouds import CloudsResource
 from mtn_cloud.resources.groups import GroupsResource
 from mtn_cloud.resources.instance_types import InstanceTypesResource
 from mtn_cloud.resources.instances import InstancesResource
@@ -60,6 +61,7 @@ class MTNCloud:
         instances: Manage compute instances
         instance_types: Discover available instance types
         networks: Manage networks
+        clouds: Manage clouds/zones
         groups: Manage groups (sites)
         plans: Manage service plans
 
@@ -119,6 +121,7 @@ class MTNCloud:
         self._instances: InstancesResource | None = None
         self._instance_types: InstanceTypesResource | None = None
         self._networks: NetworksResource | None = None
+        self._clouds: CloudsResource | None = None
         self._groups: GroupsResource | None = None
         self._plans: PlansResource | None = None
 
@@ -203,6 +206,20 @@ class MTNCloud:
         if self._groups is None:
             self._groups = GroupsResource(self._http)
         return self._groups
+
+    @property
+    def clouds(self) -> CloudsResource:
+        """
+        Access the clouds (zones) resource manager.
+
+        Example:
+            ```python
+            clouds = cloud.clouds.list_openstack()
+            ```
+        """
+        if self._clouds is None:
+            self._clouds = CloudsResource(self._http)
+        return self._clouds
 
     @property
     def plans(self) -> PlansResource:

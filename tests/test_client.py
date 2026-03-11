@@ -80,6 +80,14 @@ class TestMTNCloudResources:
             groups = cloud.groups
             assert groups is not None
 
+    def test_clouds_property(self):
+        """Test clouds resource manager."""
+        with patch("mtn_cloud.client.HTTPClient"):
+            cloud = MTNCloud(token="test")
+            clouds = cloud.clouds
+            assert clouds is not None
+            assert cloud.clouds is clouds
+
     def test_plans_property(self):
         """Test plans resource manager."""
         with patch("mtn_cloud.client.HTTPClient"):

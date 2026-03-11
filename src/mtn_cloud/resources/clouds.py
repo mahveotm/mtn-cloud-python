@@ -48,6 +48,7 @@ class CloudsResource(BaseResource[Cloud]):
         phrase: str | None = None,
         name: str | None = None,
         group_id: int | None = None,
+        type_code: str | None = None,
         **filters: Any,
     ) -> List[Cloud]:
         """
@@ -61,6 +62,7 @@ class CloudsResource(BaseResource[Cloud]):
             phrase: Search phrase
             name: Filter by name
             group_id: Filter by group ID
+            type_code: Cloud type code filter (e.g. 'openstack')
             **filters: Additional filters
 
         Returns:
@@ -70,6 +72,8 @@ class CloudsResource(BaseResource[Cloud]):
             filters["name"] = name
         if group_id:
             filters["groupId"] = group_id
+        if type_code:
+            filters["type"] = type_code
 
         return super().list(
             max_results=max_results,
@@ -77,6 +81,32 @@ class CloudsResource(BaseResource[Cloud]):
             sort=sort,
             direction=direction,
             phrase=phrase,
+            **filters,
+        )
+
+    def list_openstack(
+        self,
+        max_results: int | None = None,
+        offset: int = 0,
+        sort: str | None = None,
+        direction: str | None = None,
+        phrase: str | None = None,
+        name: str | None = None,
+        group_id: int | None = None,
+        **filters: Any,
+    ) -> List[Cloud]:
+        """
+        List OpenStack clouds only.
+        """
+        return self.list(
+            max_results=max_results,
+            offset=offset,
+            sort=sort,
+            direction=direction,
+            phrase=phrase,
+            name=name,
+            group_id=group_id,
+            type_code="openstack",
             **filters,
         )
 

@@ -56,54 +56,6 @@ cloud = MTNCloud(username="user@example.com", password="your-password")
 
 **Getting your API token:** MTN Cloud Console → User Icon (top right) → User Settings → API Access
 
----
-
-## Creating an Instance
-
-```python
-from mtn_cloud import MTNCloud
-from mtn_cloud.models import InstanceVolume, InstanceNetwork
-
-cloud = MTNCloud(token="your-api-token")
-
-instance = cloud.instances.create(
-    name="my-server",
-    cloud="MTNNG_CLOUD_AZ_1",
-    type="MTN-CS10",                     # Instance type code
-    group="MTNNG_CLOUD_AZ_1",            # Group name (resolved to ID automatically)
-    layout=327,                          # Layout ID for MTN-CS10
-    plan=6775,                           # Service plan ID (G2S2: 2 cores, 2GB RAM)
-    resource_pool_id="pool-214",
-    availability_zone="Lagos-AZ-1-fd1",
-    security_group="default",
-    os_external_network_id="public-network-01",
-    volumes=[
-        InstanceVolume(
-            name="root",
-            size=20,                     # Size in GB
-            storage_type=11,
-            datastore_id="auto",
-        ),
-    ],
-    network_interfaces=[
-        InstanceNetwork(
-            network_id="network-298",
-            ip_address="192.168.100.50",  # Optional: static IP
-        ),
-    ],
-    labels=["production", "web"],
-)
-
-print(f"Instance created: {instance.name} (ID: {instance.id})")
-
-# Wait for instance to be running
-instance = cloud.instances.wait_until_running(instance.id, timeout=300)
-print(f"Instance is now: {instance.status}")
-print(f"IP Address: {instance.primary_ip}")
-```
-
----
-
 ## Reference Data
 
 ### Groups
@@ -217,6 +169,7 @@ app_types = cloud.instance_types.list_apps()
 ### Networks
 
 ```python
+# List networks (optionally by cloud/zone id)
 networks = cloud.networks.list()
 for network in networks:
     print(f"{network.name} (ID: {network.id})")
@@ -227,6 +180,122 @@ print(f"CIDR: {network.cidr}")
 print(f"Gateway: {network.gateway}")
 
 network = cloud.networks.get_by_name("my-network")
+
+# Discover network type IDs for OpenStack
+network_types = cloud.networks.list_types(openstack_only=True)
+for nt in network_types:
+    print(nt.id, nt.code, nt.name)
+
+# Create network (OpenStack-focused fields)
+new_network = cloud.networks.create(
+    name="mtn-prod-net",
+    cloud_id=1,          # /api/zones/{id}
+    group_id=621,        # /api/groups/{id}
+    type_id=network_types[0].id,
+    cidr="192.168.50.0/24",
+    gateway="192.168.50.1",
+    dns_primary="8.8.8.8",
+    dhcp_server=True,
+    visibility="private",
+)
+
+# Update network
+updated = cloud.networks.update(
+    new_network.id,
+    description="Production network",
+    allow_static_override=True,
+)
+
+# List subnets under a network
+subnets = cloud.networks.list_subnets(new_network.id)
+
+# Delete network
+cloud.networks.delete(new_network.id)
+```
+
+### OpenStack Network Config Examples
+
+```python
+# Example 1: Tenant-private network with DHCP and DNS
+private_net = cloud.networks.create(
+    name="tenant-a-private",
+    cloud_id=1,
+    group_id=621,
+    type_id=network_types[0].id,
+    cidr="10.42.10.0/24",
+    gateway="10.42.10.1",
+    dns_primary="8.8.8.8",
+    dns_secondary="1.1.1.1",
+    dhcp_server=True,
+    allow_static_override=False,
+    assign_public_ip=False,
+    visibility="private",
+)
+
+# Example 2: Shared network with controlled group access
+shared_net = cloud.networks.create(
+    name="shared-services-net",
+    cloud_id=1,
+    group_id=621,
+    type_id=network_types[0].id,
+    cidr="10.42.20.0/24",
+    gateway="10.42.20.1",
+    visibility="public",
+    resource_permission_all=False,
+    resource_permission_site_ids=[621],  # Group IDs allowed to use it
+)
+
+# Example 3: Update network routing/security options
+cloud.networks.update(
+    private_net.id,
+    no_proxy="169.254.169.254,10.0.0.0/8",
+    appliance_url_proxy_bypass=True,
+    search_domains="svc.internal.example",
+)
+```
+
+## Creating an Instance
+
+```python
+from mtn_cloud import MTNCloud
+from mtn_cloud.models import InstanceVolume, InstanceNetwork
+
+cloud = MTNCloud(token="your-api-token")
+
+instance = cloud.instances.create(
+    name="my-server",
+    cloud="MTNNG_CLOUD_AZ_1",
+    type="MTN-CS10",                     # Instance type code
+    group="MTNNG_CLOUD_AZ_1",            # Group name (resolved to ID automatically)
+    layout=327,                          # Layout ID for MTN-CS10
+    plan=6775,                           # Service plan ID (G2S2: 2 cores, 2GB RAM)
+    resource_pool_id="pool-214",
+    availability_zone="Lagos-AZ-1-fd1",
+    security_group="default",
+    os_external_network_id="public-network-01",
+    volumes=[
+        InstanceVolume(
+            name="root",
+            size=20,                     # Size in GB
+            storage_type=11,
+            datastore_id="auto",
+        ),
+    ],
+    network_interfaces=[
+        InstanceNetwork(
+            network_id="network-298",
+            ip_address="192.168.100.50",  # Optional: static IP
+        ),
+    ],
+    labels=["production", "web"],
+)
+
+print(f"Instance created: {instance.name} (ID: {instance.id})")
+
+# Wait for instance to be running
+instance = cloud.instances.wait_until_running(instance.id, timeout=300)
+print(f"Instance is now: {instance.status}")
+print(f"IP Address: {instance.primary_ip}")
 ```
 
 ### Configuration Values
@@ -367,6 +436,20 @@ config = MTNCloudConfig(
 
 cloud = MTNCloud(config=config)
 ```
+
+---
+
+## Testing and Coverage
+
+```bash
+# Run tests
+pytest -v
+
+# Run tests with coverage (terminal + XML + HTML reports)
+pytest -v --cov=mtn_cloud --cov-report=term-missing --cov-report=xml:coverage/coverage.xml --cov-report=html:coverage/html
+```
+
+In CI (`.github/workflows/test.yml`), coverage is generated during tests, uploaded as an artifact, and summarized in the GitHub Actions job summary for the `ubuntu-latest` + `3.12` run.
 
 ---
 
