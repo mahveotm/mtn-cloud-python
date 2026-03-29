@@ -1,9 +1,4 @@
-"""
-Clouds Resource
-===============
-
-Resource manager for MTN Cloud clouds (zones).
-"""
+"""Resource manager for MTN Cloud clouds (zones)."""
 
 from __future__ import annotations
 
@@ -21,7 +16,6 @@ class CloudsResource(BaseResource[Cloud]):
     Clouds represent infrastructure endpoints where resources can be deployed.
 
     Example:
-        ```python
         # List clouds
         clouds = cloud.clouds.list()
 
@@ -30,7 +24,6 @@ class CloudsResource(BaseResource[Cloud]):
 
         # Get cloud by name
         c = cloud.clouds.get_by_name("MTNNG_CLOUD_AZ_1")
-        ```
     """
 
     _path = "/zones"

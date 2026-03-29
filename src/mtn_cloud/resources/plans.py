@@ -1,9 +1,4 @@
-"""
-Plans Resource
-==============
-
-Resource manager for MTN Cloud service plans.
-"""
+"""Resource manager for MTN Cloud service plans."""
 
 from typing import Any
 
@@ -19,7 +14,6 @@ class PlansResource(BaseResource[ServicePlan]):
     Service plans define compute resources for instances.
 
     Example:
-        ```python
         # List plans
         plans = cloud.plans.list()
 
@@ -28,7 +22,6 @@ class PlansResource(BaseResource[ServicePlan]):
 
         # Find plan by cores/memory
         plan = cloud.plans.find(cores=2, memory_gb=4)
-        ```
     """
 
     _path = "/service-plans"

@@ -1,9 +1,4 @@
-"""
-Instance Types Resource
-=======================
-
-Resource manager for MTN Cloud instance types.
-"""
+"""Resource manager for MTN Cloud instance types."""
 
 from __future__ import annotations
 
@@ -22,7 +17,6 @@ class InstanceTypesResource(BaseResource[InstanceType]):
     for provisioning on MTN Cloud.
 
     Example:
-        ```python
         # List all instance types
         instance_types = cloud.instance_types.list()
 
@@ -34,7 +28,6 @@ class InstanceTypesResource(BaseResource[InstanceType]):
         centos = cloud.instance_types.get_by_code("MTN-CS10")
         print(f"Name: {centos.name}")
         print(f"Layout ID: {centos.default_layout_id}")
-        ```
     """
 
     _path = "/instance-types"
@@ -121,10 +114,8 @@ class InstanceTypesResource(BaseResource[InstanceType]):
             NotFoundError: If instance type not found
 
         Example:
-            ```python
             centos = cloud.instance_types.get_by_code("MTN-CS10")
             ubuntu = cloud.instance_types.get_by_code("MTN-U24.04LTS")
-            ```
         """
         instance_types = self.list(code=code, max_results=1)
         if not instance_types:

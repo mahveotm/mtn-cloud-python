@@ -1,9 +1,4 @@
-"""
-Instances Resource
-==================
-
-Resource manager for MTN Cloud instances.
-"""
+"""Resource manager for MTN Cloud instances."""
 
 from __future__ import annotations
 
@@ -29,7 +24,6 @@ class InstancesResource(BaseResource[Instance]):
     Manage MTN Cloud instances.
 
     Example:
-        ```python
         # List instances
         instances = cloud.instances.list()
 
@@ -57,7 +51,6 @@ class InstancesResource(BaseResource[Instance]):
 
         # Delete instance
         cloud.instances.delete(123)
-        ```
     """
 
     _path = "/instances"
@@ -237,7 +230,6 @@ class InstancesResource(BaseResource[Instance]):
             Created instance
 
         Example:
-            ```python
             # MTN Cloud instance creation
             instance = cloud.instances.create(
                 name="MyInstanceName",
@@ -257,7 +249,6 @@ class InstancesResource(BaseResource[Instance]):
                     InstanceNetwork(network_id="network-298", ip_address="192.168.100.40"),
                 ],
             )
-            ```
         """
         # Resolve group name to group ID
         group_id = self._resolve_group_id(group)

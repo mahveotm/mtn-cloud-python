@@ -1,9 +1,4 @@
-"""
-MTN Cloud SDK HTTP Client
-=========================
-
-Low-level HTTP client with retry logic, error handling, and authentication.
-"""
+"""Low-level HTTP transport, authentication, and error mapping."""
 
 import logging
 from typing import Any, Literal
@@ -86,7 +81,6 @@ class HTTPClient:
         # Set default headers
         session.headers.update(
             {
-                "Content-Type": "application/json",
                 "Accept": "application/json",
                 "User-Agent": self.config.user_agent,
             }
@@ -168,6 +162,7 @@ class HTTPClient:
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
         data: dict[str, Any] | None = None,
+        files: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         timeout: float | None = None,
     ) -> dict[str, Any]:
@@ -180,6 +175,7 @@ class HTTPClient:
             params: Query parameters
             json: JSON body
             data: Form data
+            files: Multipart file payload
             headers: Additional headers
             timeout: Request timeout override
 
@@ -205,6 +201,8 @@ class HTTPClient:
                 logger.debug(f"Params: {params}")
             if json:
                 logger.debug(f"JSON: {json}")
+            if files:
+                logger.debug(f"Files: {list(files.keys())}")
 
         try:
             response = self.session.request(
@@ -213,6 +211,7 @@ class HTTPClient:
                 params=params,
                 json=json,
                 data=data,
+                files=files,
                 headers=request_headers,
                 timeout=request_timeout,
             )
@@ -341,6 +340,23 @@ class HTTPClient:
             if messages:
                 return "; ".join(messages)
 
+        if "errors" in body and isinstance(body["errors"], dict):
+            messages: list[str] = []
+            for field, value in body["errors"].items():
+                if isinstance(value, list):
+                    joined = ", ".join(str(item) for item in value)
+                    messages.append(f"{field}: {joined}")
+                elif isinstance(value, dict):
+                    detail = value.get("message") or value.get("msg") or str(value)
+                    messages.append(f"{field}: {detail}")
+                else:
+                    messages.append(f"{field}: {value}")
+            if messages:
+                return "; ".join(messages)
+
+        if body:
+            return str(body)
+
         return "Unknown error"
 
     # Convenience methods
@@ -388,6 +404,47 @@ class HTTPClient:
     ) -> dict[str, Any]:
         """Make a DELETE request."""
         return self.request("DELETE", path, params=params, **kwargs)
+
+    def get_bytes(
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        timeout: float | None = None,
+    ) -> bytes:
+        """
+        Make a GET request and return raw bytes.
+
+        Useful for binary file download endpoints.
+        """
+        url = self._build_url(path)
+        request_headers = {**self._get_headers(), **(headers or {})}
+        request_timeout = timeout or self.config.timeout
+
+        try:
+            response = self.session.request(
+                method="GET",
+                url=url,
+                params=params,
+                headers=request_headers,
+                timeout=request_timeout,
+            )
+
+            if 200 <= response.status_code < 300:
+                return response.content
+
+            # Reuse standard error mapping.
+            self._handle_response(response)
+            return b""
+        except requests.exceptions.Timeout as e:
+            raise MTNTimeoutError(
+                f"Request to {path} timed out",
+                timeout=request_timeout,
+            ) from e
+        except requests.exceptions.ConnectionError as e:
+            raise MTNCloudError(f"Connection error: {e}") from e
+        except requests.exceptions.RequestException as e:
+            raise MTNCloudError(f"Request failed: {e}") from e
 
     def close(self) -> None:
         """Close the HTTP session."""

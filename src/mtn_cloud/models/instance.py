@@ -1,9 +1,4 @@
-"""
-Instance Models
-===============
-
-Models for MTN Cloud compute instances.
-"""
+"""Models for MTN Cloud compute instances and payload builders."""
 
 from datetime import datetime
 from enum import Enum
@@ -133,7 +128,6 @@ class Instance(Resource):
     Represents a virtual machine or container running on MTN Cloud.
 
     Example:
-        ```python
         # Get instance details
         instance = cloud.instances.get(123)
         print(f"Name: {instance.name}")
@@ -143,7 +137,6 @@ class Instance(Resource):
         # Perform actions
         instance.stop()
         instance.start()
-        ```
     """
 
     # Basic info
@@ -290,7 +283,6 @@ class InstanceCreate(BaseModel):
     Based on the Morpheus API specification for instance provisioning.
 
     Example:
-        ```python
         # MTN Cloud instance creation
         instance = cloud.instances.create(
             name="MyInstanceName",
@@ -310,7 +302,6 @@ class InstanceCreate(BaseModel):
                 InstanceNetwork(network_id="network-298", ip_address="192.168.100.40"),
             ],
         )
-        ```
     """
 
     # Required fields

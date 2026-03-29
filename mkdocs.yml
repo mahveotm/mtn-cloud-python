@@ -1,0 +1,30 @@
+site_name: MTN Cloud Python SDK
+site_description: Community Python SDK docs for MTN Cloud (Morpheus)
+repo_url: https://github.com/mahveotm/mtn-cloud-python
+repo_name: mahveotm/mtn-cloud-python
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+markdown_extensions:
+  - tables
+  - admonition
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Instances: instances.md
+  - Networking: networking.md
+  - Storage: storage.md
+  - Advanced Cookbook: advanced-cookbook.md
+  - API Overview: api-overview.md
+  - Docstring Style: docstring-style.md

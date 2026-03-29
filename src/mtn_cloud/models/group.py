@@ -1,9 +1,4 @@
-"""
-Group Models
-============
-
-Models for MTN Cloud groups (sites).
-"""
+"""Models for MTN Cloud groups (sites)."""
 
 from typing import Any
 
@@ -20,14 +15,12 @@ class Group(Resource):
     Also known as "sites" in the Morpheus API.
 
     Example:
-        ```python
         # List groups
         for group in cloud.groups.list():
             print(f"{group.name}: {group.location}")
 
         # Get specific group
         group = cloud.groups.get(1)
-        ```
     """
 
     # Group details

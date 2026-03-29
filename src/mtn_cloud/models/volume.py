@@ -1,9 +1,4 @@
-"""
-Volume Models
-=============
-
-Models for MTN Cloud storage volumes.
-"""
+"""Models for MTN Cloud storage volumes."""
 
 from typing import Any
 

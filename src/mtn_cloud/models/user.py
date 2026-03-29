@@ -1,9 +1,4 @@
-"""
-User Models
-===========
-
-Models for MTN Cloud users.
-"""
+"""Models for MTN Cloud users and roles."""
 
 from typing import Any
 
@@ -30,12 +25,10 @@ class User(Resource):
     Represents an authenticated user account.
 
     Example:
-        ```python
         # Get current user
         user = cloud.whoami()
         print(f"Logged in as: {user.username}")
         print(f"Email: {user.email}")
-        ```
     """
 
     # User details

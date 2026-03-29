@@ -95,6 +95,22 @@ class TestMTNCloudResources:
             plans = cloud.plans
             assert plans is not None
 
+    def test_storage_buckets_property(self):
+        """Test storage buckets resource manager."""
+        with patch("mtn_cloud.client.HTTPClient"):
+            cloud = MTNCloud(token="test")
+            buckets = cloud.storage_buckets
+            assert buckets is not None
+            assert cloud.storage_buckets is buckets
+
+    def test_archive_buckets_property(self):
+        """Test archive buckets resource manager."""
+        with patch("mtn_cloud.client.HTTPClient"):
+            cloud = MTNCloud(token="test")
+            buckets = cloud.archive_buckets
+            assert buckets is not None
+            assert cloud.archive_buckets is buckets
+
 
 class TestMTNCloudContextManager:
     """Tests for context manager functionality."""

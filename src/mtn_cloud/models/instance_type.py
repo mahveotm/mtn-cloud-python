@@ -1,9 +1,4 @@
-"""
-Instance Type Models
-====================
-
-Models for MTN Cloud instance types.
-"""
+"""Models for MTN Cloud instance types and layouts."""
 
 from __future__ import annotations
 
@@ -38,7 +33,6 @@ class InstanceType(Resource):
     that can be provisioned on MTN Cloud.
 
     Example:
-        ```python
         # List available instance types
         instance_types = cloud.instance_types.list()
         for it in instance_types:
@@ -51,7 +45,6 @@ class InstanceType(Resource):
         # Access all layouts
         for layout in centos.layouts:
             print(f"  Layout: {layout.id} - {layout.name}")
-        ```
     """
 
     # Basic info

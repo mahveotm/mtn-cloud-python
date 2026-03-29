@@ -1,9 +1,4 @@
-"""
-Service Plan Models
-===================
-
-Models for MTN Cloud service plans.
-"""
+"""Models for MTN Cloud service plans."""
 
 from typing import Any
 
@@ -20,11 +15,9 @@ class ServicePlan(Resource):
     available to instances.
 
     Example:
-        ```python
         # List plans
         for plan in cloud.plans.list():
             print(f"{plan.name}: {plan.cores} cores, {plan.memory_gb}GB RAM")
-        ```
     """
 
     # Plan details

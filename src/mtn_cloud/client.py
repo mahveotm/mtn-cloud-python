@@ -1,21 +1,18 @@
-"""
-MTN Cloud Client
-================
-
-Main client class for interacting with MTN Cloud.
-"""
+"""Client entry point for interacting with MTN Cloud."""
 
 from typing import Any
 
 from mtn_cloud.config import MTNCloudConfig
 from mtn_cloud.http import HTTPClient
 from mtn_cloud.models.user import User
+from mtn_cloud.resources.archive_buckets import ArchiveBucketsResource
 from mtn_cloud.resources.clouds import CloudsResource
 from mtn_cloud.resources.groups import GroupsResource
 from mtn_cloud.resources.instance_types import InstanceTypesResource
 from mtn_cloud.resources.instances import InstancesResource
 from mtn_cloud.resources.networks import NetworksResource
 from mtn_cloud.resources.plans import PlansResource
+from mtn_cloud.resources.storage_buckets import StorageBucketsResource
 
 
 class MTNCloud:
@@ -26,7 +23,6 @@ class MTNCloud:
     API token or credentials to start making API calls.
 
     Example:
-        ```python
         from mtn_cloud import MTNCloud
 
         # Initialize with token
@@ -55,7 +51,6 @@ class MTNCloud:
         # Use as context manager
         with MTNCloud(token="xxx") as cloud:
             instances = cloud.instances.list()
-        ```
 
     Attributes:
         instances: Manage compute instances
@@ -64,6 +59,8 @@ class MTNCloud:
         clouds: Manage clouds/zones
         groups: Manage groups (sites)
         plans: Manage service plans
+        storage_buckets: Manage storage buckets and file shares
+        archive_buckets: Manage archive buckets and files
 
     Environment Variables:
         MTN_CLOUD_TOKEN: API access token
@@ -124,6 +121,8 @@ class MTNCloud:
         self._clouds: CloudsResource | None = None
         self._groups: GroupsResource | None = None
         self._plans: PlansResource | None = None
+        self._storage_buckets: StorageBucketsResource | None = None
+        self._archive_buckets: ArchiveBucketsResource | None = None
 
     @property
     def instances(self) -> InstancesResource:
@@ -131,7 +130,6 @@ class MTNCloud:
         Access the instances resource manager.
 
         Example:
-            ```python
             # List instances
             instances = cloud.instances.list()
 
@@ -140,7 +138,6 @@ class MTNCloud:
 
             # Get instance
             instance = cloud.instances.get(123)
-            ```
         """
         if self._instances is None:
             self._instances = InstancesResource(self._http)
@@ -155,7 +152,6 @@ class MTNCloud:
         for provisioning on MTN Cloud.
 
         Example:
-            ```python
             # List all instance types
             instance_types = cloud.instance_types.list()
 
@@ -165,7 +161,6 @@ class MTNCloud:
             # Get by code
             centos = cloud.instance_types.get_by_code("MTN-CS10")
             print(f"Layout ID: {centos.default_layout_id}")
-            ```
         """
         if self._instance_types is None:
             self._instance_types = InstanceTypesResource(self._http)
@@ -177,13 +172,11 @@ class MTNCloud:
         Access the networks resource manager.
 
         Example:
-            ```python
             # List networks
             networks = cloud.networks.list()
 
             # Get network
             network = cloud.networks.get(123)
-            ```
         """
         if self._networks is None:
             self._networks = NetworksResource(self._http)
@@ -195,13 +188,11 @@ class MTNCloud:
         Access the groups resource manager.
 
         Example:
-            ```python
             # List groups
             groups = cloud.groups.list()
 
             # Get group
             group = cloud.groups.get(1)
-            ```
         """
         if self._groups is None:
             self._groups = GroupsResource(self._http)
@@ -213,9 +204,7 @@ class MTNCloud:
         Access the clouds (zones) resource manager.
 
         Example:
-            ```python
             clouds = cloud.clouds.list_openstack()
-            ```
         """
         if self._clouds is None:
             self._clouds = CloudsResource(self._http)
@@ -227,17 +216,50 @@ class MTNCloud:
         Access the service plans resource manager.
 
         Example:
-            ```python
             # List plans
             plans = cloud.plans.list()
 
             # Get plan
             plan = cloud.plans.get(6923)
-            ```
         """
         if self._plans is None:
             self._plans = PlansResource(self._http)
         return self._plans
+
+    @property
+    def storage_buckets(self) -> StorageBucketsResource:
+        """
+        Access the storage buckets resource manager.
+
+        Example:
+            storage_buckets = cloud.storage_buckets.list()
+            bucket = cloud.storage_buckets.create_s3(
+                name="my-s3-store",
+                bucket_name="my-objects",
+                access_key="AKIA...",
+                secret_key="...",
+                endpoint="https://s3.example.com",
+            )
+        """
+        if self._storage_buckets is None:
+            self._storage_buckets = StorageBucketsResource(self._http)
+        return self._storage_buckets
+
+    @property
+    def archive_buckets(self) -> ArchiveBucketsResource:
+        """
+        Access the archive buckets resource manager.
+
+        Example:
+            archive_buckets = cloud.archive_buckets.list()
+            files = cloud.archive_buckets.list_files(
+                bucket_name="my-archive",
+                remote_path="/",
+            )
+        """
+        if self._archive_buckets is None:
+            self._archive_buckets = ArchiveBucketsResource(self._http)
+        return self._archive_buckets
 
     def whoami(self) -> User:
         """
@@ -247,11 +269,9 @@ class MTNCloud:
             Current user information
 
         Example:
-            ```python
             user = cloud.whoami()
             print(f"Logged in as: {user.username}")
             print(f"Email: {user.email}")
-            ```
         """
         response = self._http.get("/whoami")
         user_data = response.get("user", response)
@@ -265,10 +285,8 @@ class MTNCloud:
             True if connection is successful
 
         Example:
-            ```python
             if cloud.ping():
                 print("Connected!")
-            ```
         """
         try:
             self.whoami()

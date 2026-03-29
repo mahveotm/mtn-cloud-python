@@ -1,9 +1,4 @@
-"""
-Cloud Models
-============
-
-Models for MTN Cloud clouds (zones).
-"""
+"""Models for MTN Cloud clouds (zones)."""
 
 from enum import Enum
 from typing import Any
@@ -32,15 +27,13 @@ class Cloud(Resource):
     Also known as "zones" in the Morpheus API.
 
     Example:
-        ```python
         # List clouds
         for cloud in cloud.clouds.list():
             print(f"{cloud.name}: {cloud.cloud_type}")
 
         # Get specific cloud
         c = cloud.clouds.get(1)
-        print(f"Region: {c.region_code}")
-        ```
+        print(f"Location: {c.location}")
     """
 
     # Cloud details
@@ -61,7 +54,6 @@ class Cloud(Resource):
 
     # Location
     location: str | None = Field(default=None)
-    region_code: str | None = Field(default=None, alias="regionCode")
 
     # Status
     status: str | None = Field(default=None)

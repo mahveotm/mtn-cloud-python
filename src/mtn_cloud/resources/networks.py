@@ -1,9 +1,4 @@
-"""
-Networks Resource
-=================
-
-Resource manager for MTN Cloud networks.
-"""
+"""Resource manager for MTN Cloud networks."""
 
 from __future__ import annotations
 
@@ -26,7 +21,6 @@ class NetworksResource(BaseResource[Network]):
     Manage MTN Cloud networks.
 
     Example:
-        ```python
         # List networks
         networks = cloud.networks.list()
 
@@ -35,7 +29,6 @@ class NetworksResource(BaseResource[Network]):
 
         # Get network
         network = cloud.networks.get(123)
-        ```
     """
 
     _path = "/networks"

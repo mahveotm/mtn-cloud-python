@@ -1,9 +1,4 @@
-"""
-Groups Resource
-===============
-
-Resource manager for MTN Cloud groups (sites).
-"""
+"""Resource manager for MTN Cloud groups (sites)."""
 
 from typing import Any
 
@@ -19,7 +14,6 @@ class GroupsResource(BaseResource[Group]):
     Groups are organizational units for resources.
 
     Example:
-        ```python
         # List groups
         groups = cloud.groups.list()
 
@@ -28,7 +22,6 @@ class GroupsResource(BaseResource[Group]):
 
         # Get group by name
         group = cloud.groups.get_by_name("MTNNG_CLOUD_AZ_1")
-        ```
     """
 
     _path = "/groups"

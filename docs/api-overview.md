@@ -1,0 +1,86 @@
+# API Overview
+
+This page summarizes the public SDK surface.
+
+## Entry Point
+
+```python
+from mtn_cloud import MTNCloud
+```
+
+`MTNCloud` exposes lazily-initialized resource managers:
+- `instances`
+- `instance_types`
+- `networks`
+- `clouds`
+- `groups`
+- `plans`
+- `storage_buckets`
+- `archive_buckets`
+
+## Authentication Options
+
+- `MTNCloud(token="...")`
+- `MTNCloud(username="...", password="...")`
+- `MTNCloud()` with `MTN_CLOUD_TOKEN` env var
+
+## Common Read Operations
+
+```python
+cloud.whoami()
+cloud.instances.list()
+cloud.instances.get(123)
+cloud.groups.get_by_name("MTNNG_CLOUD_AZ_1")
+cloud.instance_types.get_by_code("MTN-CS10")
+```
+
+## Common Write Operations
+
+```python
+cloud.instances.create(...)
+cloud.instances.update(instance_id=123, name="new-name")
+cloud.instances.delete(123)
+
+cloud.networks.create(...)
+cloud.networks.update(298, description="updated")
+cloud.networks.delete(298)
+
+cloud.storage_buckets.create_s3(...)
+cloud.archive_buckets.create(...)
+cloud.archive_buckets.upload_file(...)
+```
+
+## Exception Hierarchy
+
+Base:
+- `MTNCloudError`
+
+Specialized:
+- `AuthenticationError`
+- `ForbiddenError`
+- `NotFoundError`
+- `ValidationError`
+- `RateLimitError`
+- `ServerError`
+- `TimeoutError`
+
+Catch specific exceptions first, then fallback to `MTNCloudError`.
+
+## Response Models
+
+Resource methods return typed Pydantic models, for example:
+- `Instance`
+- `Cloud`
+- `Group`
+- `ServicePlan`
+- `StorageBucket`
+- `ArchiveBucket`
+- `ArchiveFile`
+
+## Naming Conventions
+
+- `*_id` means numeric Morpheus resource ID.
+- `bucket_name` in archive methods means archive bucket name.
+- `remote_path` means path inside archive storage.
+- `local_path` / `local_directory` refer to local filesystem paths.
+

@@ -1,12 +1,9 @@
-"""
-MTN Cloud SDK Exceptions
-========================
+"""Exception hierarchy used by the MTN Cloud SDK.
 
-Custom exception classes for the MTN Cloud SDK.
-All exceptions inherit from MTNCloudError for easy catching.
+All exceptions inherit from :class:`MTNCloudError` for convenient top-level
+error handling.
 
 Example:
-    ```python
     from mtn_cloud import MTNCloud, MTNCloudError, NotFoundError
 
     cloud = MTNCloud(token="xxx")
@@ -17,7 +14,6 @@ Example:
         print(f"Instance not found: {e}")
     except MTNCloudError as e:
         print(f"API error: {e}")
-    ```
 """
 
 from typing import Any

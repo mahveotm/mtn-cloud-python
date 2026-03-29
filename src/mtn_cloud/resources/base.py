@@ -1,9 +1,4 @@
-"""
-Base Resource
-=============
-
-Base class for all resource managers.
-"""
+"""Base primitives shared by all resource managers."""
 
 from __future__ import annotations
 

@@ -1,9 +1,4 @@
-"""
-Base Models
-===========
-
-Base classes for all MTN Cloud SDK models.
-"""
+"""Base model primitives shared by all SDK resource models."""
 
 from __future__ import annotations
 

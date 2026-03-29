@@ -1,9 +1,4 @@
-"""
-Network Models
-==============
-
-Models for MTN Cloud networks.
-"""
+"""Models and payload builders for MTN Cloud networking resources."""
 
 from __future__ import annotations
 
@@ -56,14 +51,12 @@ class Network(Resource):
     Represents a virtual network that instances can connect to.
 
     Example:
-        ```python
         # List networks
         for network in cloud.networks.list():
             print(f"{network.name}: {network.cidr}")
 
         # Get specific network
         network = cloud.networks.get(123)
-        ```
     """
 
     # Network details

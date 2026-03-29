@@ -1,10 +1,15 @@
-"""
-MTN Cloud SDK Models
-====================
+"""Public model exports for MTN Cloud SDK resource objects."""
 
-Pydantic models for MTN Cloud API resources.
-"""
-
+from mtn_cloud.models.archive import (
+    ArchiveBucket,
+    ArchiveBucketCreate,
+    ArchiveBucketUpdate,
+    ArchiveBucketVisibility,
+    ArchiveDirectorySkippedFile,
+    ArchiveDirectoryUploadFailure,
+    ArchiveDirectoryUploadResult,
+    ArchiveFile,
+)
 from mtn_cloud.models.base import BaseModel, PaginatedResponse, Resource
 from mtn_cloud.models.cloud import Cloud, CloudType
 from mtn_cloud.models.group import Group
@@ -31,6 +36,11 @@ from mtn_cloud.models.network import (
     Subnet,
 )
 from mtn_cloud.models.plan import ServicePlan
+from mtn_cloud.models.storage_bucket import (
+    StorageBucket,
+    StorageBucketCreate,
+    StorageBucketUpdate,
+)
 from mtn_cloud.models.user import User, UserRole
 from mtn_cloud.models.volume import StorageVolume, Volume
 
@@ -69,6 +79,19 @@ __all__ = [
     # Cloud
     "Cloud",
     "CloudType",
+    # Storage Bucket
+    "StorageBucket",
+    "StorageBucketCreate",
+    "StorageBucketUpdate",
+    # Archive
+    "ArchiveBucket",
+    "ArchiveFile",
+    "ArchiveDirectoryUploadFailure",
+    "ArchiveDirectoryUploadResult",
+    "ArchiveDirectorySkippedFile",
+    "ArchiveBucketCreate",
+    "ArchiveBucketUpdate",
+    "ArchiveBucketVisibility",
     # Plan
     "ServicePlan",
     # User

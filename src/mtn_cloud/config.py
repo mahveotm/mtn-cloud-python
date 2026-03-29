@@ -1,13 +1,11 @@
-"""
-MTN Cloud SDK Configuration
-===========================
-
-Configuration management using pydantic-settings.
-Supports environment variables and explicit configuration.
-"""
+"""Configuration models and defaults for the MTN Cloud SDK."""
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from mtn_cloud._version import __version__
+
+DEFAULT_USER_AGENT = f"mtn-cloud-python/{__version__}"
 
 
 class MTNCloudConfig(BaseSettings):
@@ -20,7 +18,6 @@ class MTNCloudConfig(BaseSettings):
     3. Default values
 
     Example:
-        ```python
         # From environment: MTN_CLOUD_TOKEN=xxx
         config = MTNCloudConfig()
 
@@ -29,7 +26,6 @@ class MTNCloudConfig(BaseSettings):
             token="your-token",
             timeout=60,
         )
-        ```
 
     Environment Variables:
         MTN_CLOUD_TOKEN: API access token
@@ -104,7 +100,7 @@ class MTNCloudConfig(BaseSettings):
 
     # Client Configuration
     user_agent: str = Field(
-        default="mtn-cloud-python/0.1.0",
+        default=DEFAULT_USER_AGENT,
         description="User-Agent header for API requests",
     )
 

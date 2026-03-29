@@ -56,6 +56,10 @@ dev = [
     "mypy>=1.0.0",
     "types-requests>=2.28.0",
 ]
+docs = [
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.5.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/mahveotm/mtn-cloud-python"
@@ -64,7 +68,7 @@ Repository = "https://github.com/mahveotm/mtn-cloud-python"
 Issues = "https://github.com/mahveotm/mtn-cloud-python/issues"
 
 [tool.hatch.version]
-path = "src/mtn_cloud/__init__.py"
+path = "src/mtn_cloud/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mtn_cloud"]
@@ -73,6 +77,7 @@ packages = ["src/mtn_cloud"]
 include = [
     "/src",
     "/tests",
+    "/docs",
     "/README.md",
     "/LICENSE",
 ]
@@ -117,4 +122,3 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-
