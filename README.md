@@ -8,7 +8,7 @@
 
 A Modern Python SDK for [MTN Cloud](https://console.cloud.mtn.ng) (Morpheus) with typed models, clear resource managers, and practical workflows for compute, networking, storage, and archives.
 
-Docs: [mahveotm.github.io/mtn-cloud-python](https://mahveotm.github.io/mtn-cloud-python/)
+Docs: [mtn-cloud-python](https://mahveotm.github.io/mtn-cloud-python/)
 
 > **Disclaimer:** Unofficial community project. Not affiliated with MTN Nigeria.
 
@@ -29,14 +29,14 @@ pip install mtn-cloud
 
 ## Documentation
 
-- [Docs Index](docs/index.md)
-- [Quickstart](docs/quickstart.md)
-- [Instances](docs/instances.md)
-- [Networking](docs/networking.md)
-- [Storage](docs/storage.md)
-- [Advanced Cookbook](docs/advanced-cookbook.md)
-- [API Overview](docs/api-overview.md)
-- [Docstring Style Standard](docs/docstring-style.md)
+- [Docs Index](https://mahveotm.github.io/mtn-cloud-python/)
+- [Quickstart](https://mahveotm.github.io/mtn-cloud-python/quickstart/)
+- [Instances](https://mahveotm.github.io/mtn-cloud-python/instances/)
+- [Networking](https://mahveotm.github.io/mtn-cloud-python/networking/)
+- [Storage](https://mahveotm.github.io/mtn-cloud-python/storage/)
+- [Advanced Cookbook](https://mahveotm.github.io/mtn-cloud-python/advanced-cookbook/)
+- [API Overview](https://mahveotm.github.io/mtn-cloud-python/api-overview/)
+- [Docstring Style Standard](https://mahveotm.github.io/mtn-cloud-python/docstring-style/)
 
 ## Quick Start
 
@@ -303,6 +303,7 @@ MIT License. See [LICENSE](LICENSE) for details.
 ## Links
 
 - [MTN Cloud Console](https://console.cloud.mtn.ng)
+- [MTN Cloud Guide](https://cloud.mtn.ng/documentation)
 - [Morpheus API Documentation](https://apidocs.morpheusdata.com/)
 - [GitHub Repository](https://github.com/mahveotm/mtn-cloud-python)
 - [PyPI Package](https://pypi.org/project/mtn-cloud/)
