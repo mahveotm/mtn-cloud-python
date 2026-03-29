@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from builtins import list as builtin_list
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -184,7 +185,7 @@ class ArchiveBucketsResource(BaseResource[ArchiveBucket]):
         name: str | None = None,
         phrase: str | None = None,
         full_tree: bool | None = None,
-    ) -> list[ArchiveFile]:
+    ) -> builtin_list[ArchiveFile]:
         """
         List files in an archive bucket path.
 
@@ -517,7 +518,7 @@ class ArchiveBucketsResource(BaseResource[ArchiveBucket]):
         return f"{base_remote_path.rstrip('/')}/{cleaned_parent}/"
 
     @staticmethod
-    def _iter_directory_files(source_dir: Path, recursive: bool) -> list[Path]:
+    def _iter_directory_files(source_dir: Path, recursive: bool) -> builtin_list[Path]:
         """Collect local files in deterministic order."""
         iterator = source_dir.rglob("*") if recursive else source_dir.iterdir()
         files = [path for path in iterator if path.is_file()]

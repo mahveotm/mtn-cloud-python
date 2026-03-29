@@ -97,4 +97,4 @@ print(
 )
 ```
 
-For deeper patterns, see [storage usage.md](../storage%20usage.md).
+For deeper patterns, see [Advanced Cookbook](./advanced-cookbook.md#pattern-safe-bulk-upload-with-preflight).

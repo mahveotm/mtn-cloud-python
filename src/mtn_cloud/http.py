@@ -341,18 +341,18 @@ class HTTPClient:
                 return "; ".join(messages)
 
         if "errors" in body and isinstance(body["errors"], dict):
-            messages: list[str] = []
+            field_messages: list[str] = []
             for field, value in body["errors"].items():
                 if isinstance(value, list):
                     joined = ", ".join(str(item) for item in value)
-                    messages.append(f"{field}: {joined}")
+                    field_messages.append(f"{field}: {joined}")
                 elif isinstance(value, dict):
                     detail = value.get("message") or value.get("msg") or str(value)
-                    messages.append(f"{field}: {detail}")
+                    field_messages.append(f"{field}: {detail}")
                 else:
-                    messages.append(f"{field}: {value}")
-            if messages:
-                return "; ".join(messages)
+                    field_messages.append(f"{field}: {value}")
+            if field_messages:
+                return "; ".join(field_messages)
 
         if body:
             return str(body)

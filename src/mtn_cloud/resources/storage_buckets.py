@@ -149,17 +149,17 @@ class StorageBucketsResource(BaseResource[StorageBucket]):
 
         create_model = StorageBucketCreate(
             name=name,
-            bucketName=bucket_name,
+            bucket_name=bucket_name,
             config=config,
-            storageServer=storage_server,
-            defaultBackupTarget=default_backup_target,
-            copyToStore=copy_to_store,
-            defaultDeploymentTarget=default_deployment_target,
-            defaultVirtualImageTarget=default_virtual_image_target,
-            retentionPolicyType=retention_policy_type,
-            retentionPolicyDays=retention_policy_days,
-            retentionProvider=retention_provider,
-            createBucket=create_bucket,
+            storage_server=storage_server,
+            default_backup_target=default_backup_target,
+            copy_to_store=copy_to_store,
+            default_deployment_target=default_deployment_target,
+            default_virtual_image_target=default_virtual_image_target,
+            retention_policy_type=retention_policy_type,
+            retention_policy_days=retention_policy_days,
+            retention_provider=retention_provider,
+            create_bucket=create_bucket,
         )
         return self._create(create_model.to_api_payload())
 
