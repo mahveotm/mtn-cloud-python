@@ -2,6 +2,8 @@
 
 This page summarizes the public SDK surface.
 
+For endpoint-by-endpoint signatures, parameters, return types, and raised exceptions, see [API Reference](./api-reference.md).
+
 ## Entry Point
 
 ```python
@@ -83,4 +85,3 @@ Resource methods return typed Pydantic models, for example:
 - `bucket_name` in archive methods means archive bucket name.
 - `remote_path` means path inside archive storage.
 - `local_path` / `local_directory` refer to local filesystem paths.
-

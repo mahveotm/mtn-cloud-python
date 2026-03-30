@@ -14,7 +14,8 @@ Use this guide in two ways:
 4. [Storage](./storage.md)
 5. [Advanced Cookbook](./advanced-cookbook.md)
 6. [API Overview](./api-overview.md)
-7. [Docstring Style Standard](./docstring-style.md)
+7. [API Reference](./api-reference.md)
+8. [Docstring Style Standard](./docstring-style.md)
 
 ## Who This Is For
 
@@ -36,4 +37,5 @@ Use this guide in two ways:
 3. Networking
 4. Storage
 5. API Overview
-6. Advanced Cookbook
+6. API Reference
+7. Advanced Cookbook

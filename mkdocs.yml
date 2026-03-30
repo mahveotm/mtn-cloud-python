@@ -27,4 +27,5 @@ nav:
   - Storage: storage.md
   - Advanced Cookbook: advanced-cookbook.md
   - API Overview: api-overview.md
+  - API Reference: api-reference.md
   - Docstring Style: docstring-style.md
