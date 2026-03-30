@@ -26,7 +26,7 @@ Use this guide in two ways:
 ## Conventions Used
 
 - `cloud` means an initialized `MTNCloud` client.
-- `group` maps to Morpheus site.
+- `group` maps to MTN Cloud site.
 - `cloud` or `zone` may be used interchangeably based on Morpheus API naming.
 - Example IDs and codes are illustrative; query your account first before provisioning.
 

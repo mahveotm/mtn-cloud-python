@@ -1,4 +1,4 @@
-"""Models for Morpheus storage buckets."""
+"""Models for MTN Cloud storage buckets."""
 
 from __future__ import annotations
 

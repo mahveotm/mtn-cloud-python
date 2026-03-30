@@ -81,7 +81,7 @@ Resource methods return typed Pydantic models, for example:
 
 ## Naming Conventions
 
-- `*_id` means numeric Morpheus resource ID.
+- `*_id` means numeric MTN Cloud resource ID.
 - `bucket_name` in archive methods means archive bucket name.
 - `remote_path` means path inside archive storage.
 - `local_path` / `local_directory` refer to local filesystem paths.

@@ -36,21 +36,21 @@ SAMPLE_INSTANCE_TYPE = {
 
 SAMPLE_INSTANCE_TYPE_MULTIPLE_LAYOUTS = {
     "id": 113,
-    "name": "Morpheus Builds",
-    "code": "morphbuilds",
+    "name": "MTN Builds",
+    "code": "mtnbuilds",
     "description": None,
     "labels": [],
     "provisionTypeCode": "mixed",
     "category": "web",
     "active": True,
-    "environmentPrefix": "MORPHEUS_BUILDS",
+    "environmentPrefix": "MTN_BUILDS",
     "visibility": "private",
     "featured": True,
     "versions": ["7.9-v1", "8.3-v1"],
     "instanceTypeLayouts": [
-        {"id": 1313, "name": "Morpheus Debian", "provisionTypeCode": "vmware"},
-        {"id": 1315, "name": "Morpheus Ubuntu", "provisionTypeCode": "vmware"},
-        {"id": 1312, "name": "Morpheus CentOS", "provisionTypeCode": "vmware"},
+        {"id": 1313, "name": "MTN Debian", "provisionTypeCode": "vmware"},
+        {"id": 1315, "name": "MTN Ubuntu", "provisionTypeCode": "vmware"},
+        {"id": 1312, "name": "MTN CentOS", "provisionTypeCode": "vmware"},
     ],
     "account": {"id": 1, "name": "mastertenant"},
 }
@@ -183,7 +183,7 @@ class TestInstanceTypeModel:
         """Test getting layout by name."""
         it = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE_MULTIPLE_LAYOUTS)
 
-        layout = it.get_layout_by_name("Morpheus Ubuntu")
+        layout = it.get_layout_by_name("MTN Ubuntu")
         assert layout is not None
         assert layout.id == 1315
 
@@ -197,7 +197,7 @@ class TestInstanceTypeModel:
 
         layout = it.get_layout_by_id(1312)
         assert layout is not None
-        assert layout.name == "Morpheus CentOS"
+        assert layout.name == "MTN CentOS"
 
         # Test not found
         not_found = it.get_layout_by_id(99999)

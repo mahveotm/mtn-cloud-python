@@ -6,7 +6,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Modern Python SDK for [MTN Cloud](https://console.cloud.mtn.ng) (Morpheus) with typed models, clear resource managers, and practical workflows for compute, networking, storage, and archives.
+A Modern Python SDK for [MTN Cloud](https://console.cloud.mtn.ng) with typed models, clear resource managers, and practical workflows for compute, networking, storage, and archives.
 
 Docs: [mtn-cloud-python](https://mahveotm.github.io/mtn-cloud-python/)
 
@@ -305,6 +305,6 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 - [MTN Cloud Console](https://console.cloud.mtn.ng)
 - [MTN Cloud Guide](https://cloud.mtn.ng/documentation)
-- [Morpheus API Documentation](https://apidocs.morpheusdata.com/)
+- [Morpheus API Documentation (supplementary)](https://apidocs.morpheusdata.com/)
 - [GitHub Repository](https://github.com/mahveotm/mtn-cloud-python)
 - [PyPI Package](https://pypi.org/project/mtn-cloud/)

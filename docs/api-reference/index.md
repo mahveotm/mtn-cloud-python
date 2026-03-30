@@ -76,5 +76,5 @@ Every resource manager (`instances`, `networks`, `plans`, etc.) inherits:
 
 - MTN Cloud Console: <https://console.cloud.mtn.ng>
 - MTN Cloud Guide: <https://cloud.mtn.ng/documentation>
-- Morpheus API Docs: <https://apidocs.morpheusdata.com/>
+- Morpheus API Documentation (supplementary): <https://apidocs.morpheusdata.com/>
 - SDK Source: <https://github.com/mahveotm/mtn-cloud-python>

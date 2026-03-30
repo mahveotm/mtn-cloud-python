@@ -1,4 +1,4 @@
-"""Resource manager for Morpheus archive buckets and files."""
+"""Resource manager for MTN Cloud archive buckets and files."""
 
 from __future__ import annotations
 

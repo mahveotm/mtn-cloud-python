@@ -17,7 +17,7 @@ from mtn_cloud.resources.storage_buckets import StorageBucketsResource
 
 class MTNCloud:
     """
-    MTN Cloud client for interacting with the Morpheus API.
+    MTN Cloud client for interacting with the MTN Cloud API.
 
     This is the main entry point for the SDK. Initialize with your
     API token or credentials to start making API calls.

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mtn-cloud"
 dynamic = ["version"]
-description = "Community Python SDK for MTN Cloud (Morpheus) - Deploy and manage cloud resources with ease"
+description = "Community Python SDK for MTN Cloud - Deploy and manage cloud resources with ease"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [
@@ -17,7 +17,7 @@ maintainers = [
 keywords = [
     "mtn",
     "cloud",
-    "morpheus",
+    "mtn-cloud",
     "sdk",
     "api",
     "infrastructure",
