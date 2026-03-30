@@ -52,12 +52,12 @@ Every resource manager (`instances`, `networks`, `plans`, etc.) inherits:
 ### `resource.exists(resource_id: int) -> bool`
 
 - Endpoint sequence:
-  - `GET /api/<resource-path>/{resource_id}`
+    - `GET /api/<resource-path>/{resource_id}`
 - Returns:
-  - `True` if found
-  - `False` only when `NotFoundError` occurs
+    - `True` if found
+    - `False` only when `NotFoundError` occurs
 - Raises:
-  - Any non-`NotFoundError` common API exception
+    - Any non-`NotFoundError` common API exception
 
 ## Client: `MTNCloud`
 
@@ -67,15 +67,15 @@ Creates an SDK client and lazy-loads resource managers.
 
 - Endpoint: None (constructor does not make API calls)
 - Parameters:
-  - `token`: API bearer token (recommended)
-  - `username`, `password`: OAuth password-grant alternative
-  - `url`: MTN Cloud base console URL, no `/api` needed
-  - `timeout`: request timeout in seconds
-  - `verify_ssl`: enable/disable TLS certificate validation
-  - `config`: explicit `MTNCloudConfig` object (overrides other args)
+    - `token`: API bearer token (recommended)
+    - `username`, `password`: OAuth password-grant alternative
+    - `url`: MTN Cloud base console URL, no `/api` needed
+    - `timeout`: request timeout in seconds
+    - `verify_ssl`: enable/disable TLS certificate validation
+    - `config`: explicit `MTNCloudConfig` object (overrides other args)
 - Returns: `MTNCloud`
 - Raises:
-  - `pydantic.ValidationError` if config values violate `MTNCloudConfig` constraints
+    - `pydantic.ValidationError` if config values violate `MTNCloudConfig` constraints
 
 ### `whoami() -> User`
 
@@ -89,11 +89,11 @@ Creates an SDK client and lazy-loads resource managers.
 Connectivity/auth convenience check.
 
 - Endpoint sequence:
-  - `GET /api/whoami` (via `whoami()`)
+    - `GET /api/whoami` (via `whoami()`)
 - Parameters: none
 - Returns:
-  - `True` if request succeeds
-  - `False` for any exception
+    - `True` if request succeeds
+    - `False` for any exception
 - Raises: none (exceptions are swallowed and converted to `False`)
 
 ### `close() -> None`
@@ -109,12 +109,12 @@ Connectivity/auth convenience check.
 
 - Endpoint: `GET /api/instances`
 - Parameters:
-  - Shared list args (see section above)
-  - `name`: exact name filter
-  - `status`: status filter
-  - `cloud_id`: mapped to query `zoneId`
-  - `group_id`: mapped to query `siteId`
-  - `labels`: list mapped to comma-delimited query `labels`
+    - Shared list args (see section above)
+    - `name`: exact name filter
+    - `status`: status filter
+    - `cloud_id`: mapped to query `zoneId`
+    - `group_id`: mapped to query `siteId`
+    - `labels`: list mapped to comma-delimited query `labels`
 - Returns: `list[Instance]`
 - Raises: common API exceptions
 
@@ -122,57 +122,57 @@ Connectivity/auth convenience check.
 
 - Endpoint: `GET /api/instances/{instance_id}`
 - Parameters:
-  - `instance_id`: instance numeric ID
+    - `instance_id`: instance numeric ID
 - Returns: `Instance`
 - Raises: common API exceptions
 
 ### `get_by_name(name: str) -> Instance`
 
 - Endpoint sequence:
-  - `GET /api/instances?name=<name>&max=1`
+    - `GET /api/instances?name=<name>&max=1`
 - Parameters:
-  - `name`: instance name
+    - `name`: instance name
 - Returns: `Instance`
 - Raises:
-  - common API exceptions
-  - `NotFoundError` when no instance matches
+    - common API exceptions
+    - `NotFoundError` when no instance matches
 
 ### `create(name: str, *, cloud: str, type: str, group: str, layout: int, plan: int, description=None, environment=None, labels=None, tags=None, copies=1, layout_size=1, resource_pool_id=None, availability_zone=None, security_group="default", os_external_network_id=None, create_user=True, workflow_id=None, shutdown_days=None, expire_days=None, create_backup=None, security_groups=None, ports=None, volumes=None, network_interfaces=None, options=None) -> Instance`
 
 - Endpoint sequence:
-  - `GET /api/groups?name=<group>&max=1` (resolve group name to `group_id`)
-  - `POST /api/instances`
+    - `GET /api/groups?name=<group>&max=1` (resolve group name to `group_id`)
+    - `POST /api/instances`
 - Parameters:
-  - Required core fields:
-    - `name`: new instance name
-    - `cloud`: cloud/zone name (example: `MTNNG_CLOUD_AZ_1`)
-    - `type`: instance type code (example: `MTN-CS10`)
-    - `group`: group/site name (resolved to ID)
-    - `layout`: layout ID
-    - `plan`: service plan ID
-  - Optional metadata:
-    - `description`, `environment`, `labels`, `tags`
-  - Optional sizing/provisioning:
-    - `copies`, `layout_size`
-  - Optional MTN/OpenStack-specific provisioning:
-    - `resource_pool_id`, `availability_zone`, `security_group`, `os_external_network_id`, `create_user`
-  - Optional automation:
-    - `workflow_id`, `shutdown_days`, `expire_days`, `create_backup`
-  - Optional networking/storage details:
-    - `security_groups`, `ports`, `volumes`, `network_interfaces`, `options`
+    - Required core fields:
+        - `name`: new instance name
+        - `cloud`: cloud/zone name (example: `MTNNG_CLOUD_AZ_1`)
+        - `type`: instance type code (example: `MTN-CS10`)
+        - `group`: group/site name (resolved to ID)
+        - `layout`: layout ID
+        - `plan`: service plan ID
+    - Optional metadata:
+        - `description`, `environment`, `labels`, `tags`
+    - Optional sizing/provisioning:
+        - `copies`, `layout_size`
+    - Optional MTN/OpenStack-specific provisioning:
+        - `resource_pool_id`, `availability_zone`, `security_group`, `os_external_network_id`, `create_user`
+    - Optional automation:
+        - `workflow_id`, `shutdown_days`, `expire_days`, `create_backup`
+    - Optional networking/storage details:
+        - `security_groups`, `ports`, `volumes`, `network_interfaces`, `options`
 - Returns: `Instance`
 - Raises:
-  - common API exceptions
-  - `NotFoundError` when `group` cannot be resolved
+    - common API exceptions
+    - `NotFoundError` when `group` cannot be resolved
 
 ### `update(instance_id: int, name=None, description=None, labels=None) -> Instance`
 
 - Endpoint: `PUT /api/instances/{instance_id}`
 - Parameters:
-  - `instance_id`: target instance ID
-  - `name`: replacement name
-  - `description`: replacement description
-  - `labels`: replacement labels list
+    - `instance_id`: target instance ID
+    - `name`: replacement name
+    - `description`: replacement description
+    - `labels`: replacement labels list
 - Returns: `Instance`
 - Raises: common API exceptions
 
@@ -180,51 +180,51 @@ Connectivity/auth convenience check.
 
 - Endpoint: `DELETE /api/instances/{instance_id}`
 - Parameters:
-  - `instance_id`: target instance ID
-  - `preserve_volumes`: adds query `preserveVolumes=on`
-  - `force`: adds query `force=on`
+    - `instance_id`: target instance ID
+    - `preserve_volumes`: adds query `preserveVolumes=on`
+    - `force`: adds query `force=on`
 - Returns: `True` on successful deletion request
 - Raises: common API exceptions
 
 ### `start(instance_id: int) -> Instance`
 
 - Endpoint sequence:
-  - `PUT /api/instances/{instance_id}/start`
-  - `GET /api/instances/{instance_id}`
+    - `PUT /api/instances/{instance_id}/start`
+    - `GET /api/instances/{instance_id}`
 - Returns: refreshed `Instance`
 - Raises: common API exceptions
 
 ### `stop(instance_id: int) -> Instance`
 
 - Endpoint sequence:
-  - `PUT /api/instances/{instance_id}/stop`
-  - `GET /api/instances/{instance_id}`
+    - `PUT /api/instances/{instance_id}/stop`
+    - `GET /api/instances/{instance_id}`
 - Returns: refreshed `Instance`
 - Raises: common API exceptions
 
 ### `restart(instance_id: int) -> Instance`
 
 - Endpoint sequence:
-  - `PUT /api/instances/{instance_id}/restart`
-  - `GET /api/instances/{instance_id}`
+    - `PUT /api/instances/{instance_id}/restart`
+    - `GET /api/instances/{instance_id}`
 - Returns: refreshed `Instance`
 - Raises: common API exceptions
 
 ### `suspend(instance_id: int) -> Instance`
 
 - Endpoint sequence:
-  - `PUT /api/instances/{instance_id}/suspend`
-  - `GET /api/instances/{instance_id}`
+    - `PUT /api/instances/{instance_id}/suspend`
+    - `GET /api/instances/{instance_id}`
 - Returns: refreshed `Instance`
 - Raises: common API exceptions
 
 ### `resize(instance_id: int, plan_id: int) -> Instance`
 
 - Endpoint sequence:
-  - `PUT /api/instances/{instance_id}/resize`
-  - `GET /api/instances/{instance_id}`
+    - `PUT /api/instances/{instance_id}/resize`
+    - `GET /api/instances/{instance_id}`
 - Parameters:
-  - `plan_id`: new service plan ID
+    - `plan_id`: new service plan ID
 - Returns: resized `Instance`
 - Raises: common API exceptions
 
@@ -233,16 +233,16 @@ Connectivity/auth convenience check.
 Client-side polling helper.
 
 - Endpoint sequence:
-  - repeated `GET /api/instances/{instance_id}` until target status or timeout
+    - repeated `GET /api/instances/{instance_id}` until target status or timeout
 - Parameters:
-  - `target_status`: desired status string (`running`, `stopped`, etc.)
-  - `timeout`: max wait in seconds
-  - `poll_interval`: sleep interval between polls
+    - `target_status`: desired status string (`running`, `stopped`, etc.)
+    - `timeout`: max wait in seconds
+    - `poll_interval`: sleep interval between polls
 - Returns: `Instance` once target status matches
 - Raises:
-  - common API exceptions from internal `get`
-  - `TimeoutError` when timeout is exceeded
-  - `RuntimeError` if instance enters `failed` state
+    - common API exceptions from internal `get`
+    - `TimeoutError` when timeout is exceeded
+    - `RuntimeError` if instance enters `failed` state
 
 ### `wait_until_running(instance_id: int, timeout: int = 300) -> Instance`
 
@@ -266,7 +266,7 @@ Client-side polling helper.
 
 - Endpoint: `GET /api/instances/{instance_id}/history`
 - Parameters:
-  - `max_results`: maps to query `max`
+    - `max_results`: maps to query `max`
 - Returns: list from response key `processes`
 - Raises: common API exceptions
 
@@ -276,11 +276,11 @@ Client-side polling helper.
 
 - Endpoint: `GET /api/instance-types`
 - Parameters:
-  - Shared list args
-  - `name`: name filter
-  - `code`: code filter
-  - `category`: category filter (`os`, `sql`, `web`, `apps`, etc.)
-  - `featured`: feature flag filter
+    - Shared list args
+    - `name`: name filter
+    - `code`: code filter
+    - `category`: category filter (`os`, `sql`, `web`, `apps`, etc.)
+    - `featured`: feature flag filter
 - Returns: `list[InstanceType]`
 - Raises: common API exceptions
 
@@ -293,20 +293,20 @@ Client-side polling helper.
 ### `get_by_code(code: str) -> InstanceType`
 
 - Endpoint sequence:
-  - `GET /api/instance-types?code=<code>&max=1`
+    - `GET /api/instance-types?code=<code>&max=1`
 - Returns: `InstanceType`
 - Raises:
-  - common API exceptions
-  - `NotFoundError` when no match
+    - common API exceptions
+    - `NotFoundError` when no match
 
 ### `get_by_name(name: str) -> InstanceType`
 
 - Endpoint sequence:
-  - `GET /api/instance-types?name=<name>&max=1`
+    - `GET /api/instance-types?name=<name>&max=1`
 - Returns: `InstanceType`
 - Raises:
-  - common API exceptions
-  - `NotFoundError` when no match
+    - common API exceptions
+    - `NotFoundError` when no match
 
 ### `list_os() -> list[InstanceType]`
 
@@ -338,9 +338,9 @@ Client-side polling helper.
 
 - Endpoint: `GET /api/networks`
 - Parameters:
-  - Shared list args
-  - `name`: network name filter
-  - `cloud_id`: mapped to query `zoneId`
+    - Shared list args
+    - `name`: network name filter
+    - `cloud_id`: mapped to query `zoneId`
 - Returns: `list[Network]`
 - Raises: common API exceptions
 
@@ -353,12 +353,12 @@ Client-side polling helper.
 ### `get_by_name(name: str, cloud_id: int | None = None) -> Network`
 
 - Endpoint sequence:
-  - `GET /api/networks?name=<name>&max=1`
-  - Adds `zoneId=<cloud_id>` when provided
+    - `GET /api/networks?name=<name>&max=1`
+    - Adds `zoneId=<cloud_id>` when provided
 - Returns: `Network`
 - Raises:
-  - common API exceptions
-  - `NotFoundError` when no match
+    - common API exceptions
+    - `NotFoundError` when no match
 
 ### `list_by_cloud(cloud_id: int) -> list[Network]`
 
@@ -370,17 +370,17 @@ Client-side polling helper.
 
 - Endpoint: `POST /api/networks`
 - Parameters:
-  - Required:
-    - `name`: network name
-    - `cloud_id`: cloud/zone ID
-    - `group_id`: group/site ID
-  - Common optional network config:
-    - `type_id`, `display_name`, `labels`, `description`, `cidr`, `gateway`
-    - `dns_primary`, `dns_secondary`, `vlan_id`, `switch_id`, `pool_id`
-    - `allow_static_override`, `assign_public_ip`, `active`, `dhcp_server`
-    - `network_domain_id`, `search_domains`, `network_proxy_id`
-    - `appliance_url_proxy_bypass`, `no_proxy`, `visibility`
-    - `tenant_ids`, `resource_permission_all`, `resource_permission_site_ids`
+    - Required:
+        - `name`: network name
+        - `cloud_id`: cloud/zone ID
+        - `group_id`: group/site ID
+    - Common optional network config:
+        - `type_id`, `display_name`, `labels`, `description`, `cidr`, `gateway`
+        - `dns_primary`, `dns_secondary`, `vlan_id`, `switch_id`, `pool_id`
+        - `allow_static_override`, `assign_public_ip`, `active`, `dhcp_server`
+        - `network_domain_id`, `search_domains`, `network_proxy_id`
+        - `appliance_url_proxy_bypass`, `no_proxy`, `visibility`
+        - `tenant_ids`, `resource_permission_all`, `resource_permission_site_ids`
 - Returns: `Network`
 - Raises: common API exceptions
 
@@ -388,8 +388,8 @@ Client-side polling helper.
 
 - Endpoint: `PUT /api/networks/{network_id}`
 - Parameters:
-  - `network_id`: target network ID
-  - Optional fields mirror `create(...)` (except required create-only identifiers)
+    - `network_id`: target network ID
+    - Optional fields mirror `create(...)` (except required create-only identifiers)
 - Returns: `Network`
 - Raises: common API exceptions
 
@@ -409,10 +409,10 @@ Client-side polling helper.
 
 - Endpoint: `GET /api/network-types`
 - Parameters:
-  - `name`: exact name filter
-  - `code`: exact code filter
-  - `phrase`: phrase filter
-  - `openstack_only`: client-side filter on returned `is_openstack`
+    - `name`: exact name filter
+    - `code`: exact code filter
+    - `phrase`: phrase filter
+    - `openstack_only`: client-side filter on returned `is_openstack`
 - Returns: `list[NetworkTypeInfo]`
 - Raises: common API exceptions
 
@@ -426,11 +426,11 @@ Client-side polling helper.
 
 - Endpoint: `GET /api/networks/floating-ips`
 - Parameters:
-  - `phrase`: search phrase
-  - `ip_address`: exact IP match
-  - `ip_status`: provider status value
-  - `cloud_id`: mapped to `zoneId`
-  - `server_id`: mapped to `serverId`
+    - `phrase`: search phrase
+    - `ip_address`: exact IP match
+    - `ip_status`: provider status value
+    - `cloud_id`: mapped to `zoneId`
+    - `server_id`: mapped to `serverId`
 - Returns: `list[NetworkFloatingIP]`
 - Raises: common API exceptions
 
@@ -444,8 +444,8 @@ Client-side polling helper.
 
 - Endpoint: `POST /api/networks/floating-ips`
 - Parameters:
-  - `network_server_id`: backend network server ID
-  - `floating_ip_pool_id`: floating IP pool ID
+    - `network_server_id`: backend network server ID
+    - `floating_ip_pool_id`: floating IP pool ID
 - Returns: `NetworkFloatingIP`
 - Raises: common API exceptions
 
@@ -461,10 +461,10 @@ Client-side polling helper.
 
 - Endpoint: `GET /api/zones`
 - Parameters:
-  - Shared list args
-  - `name`: cloud/zone name filter
-  - `group_id`: mapped to `groupId`
-  - `type_code`: mapped to `type` (example: `openstack`)
+    - Shared list args
+    - `name`: cloud/zone name filter
+    - `group_id`: mapped to `groupId`
+    - `type_code`: mapped to `type` (example: `openstack`)
 - Returns: `list[Cloud]`
 - Raises: common API exceptions
 
@@ -483,11 +483,11 @@ Client-side polling helper.
 ### `get_by_name(name: str) -> Cloud`
 
 - Endpoint sequence:
-  - `GET /api/zones?name=<name>&max=1`
+    - `GET /api/zones?name=<name>&max=1`
 - Returns: `Cloud`
 - Raises:
-  - common API exceptions
-  - `NotFoundError` when no match
+    - common API exceptions
+    - `NotFoundError` when no match
 
 ### `list_by_group(group_id: int) -> list[Cloud]`
 
@@ -501,8 +501,8 @@ Client-side polling helper.
 
 - Endpoint: `GET /api/groups`
 - Parameters:
-  - Shared list args
-  - `name`: group name filter
+    - Shared list args
+    - `name`: group name filter
 - Returns: `list[Group]`
 - Raises: common API exceptions
 
@@ -515,11 +515,11 @@ Client-side polling helper.
 ### `get_by_name(name: str) -> Group`
 
 - Endpoint sequence:
-  - `GET /api/groups?name=<name>&max=1`
+    - `GET /api/groups?name=<name>&max=1`
 - Returns: `Group`
 - Raises:
-  - common API exceptions
-  - `NotFoundError` when no match
+    - common API exceptions
+    - `NotFoundError` when no match
 
 ## Resource: `cloud.plans` (`PlansResource`)
 
@@ -527,8 +527,8 @@ Client-side polling helper.
 
 - Endpoint: `GET /api/service-plans`
 - Parameters:
-  - Shared list args
-  - `name`: plan name filter
+    - Shared list args
+    - `name`: plan name filter
 - Returns: `list[ServicePlan]`
 - Raises: common API exceptions
 
@@ -541,25 +541,25 @@ Client-side polling helper.
 ### `get_by_name(name: str) -> ServicePlan`
 
 - Endpoint sequence:
-  - `GET /api/service-plans?name=<name>&max=1`
+    - `GET /api/service-plans?name=<name>&max=1`
 - Returns: `ServicePlan`
 - Raises:
-  - common API exceptions
-  - `NotFoundError` when no match
+    - common API exceptions
+    - `NotFoundError` when no match
 
 ### `find(cores=None, memory_gb=None, storage_gb=None) -> ServicePlan | None`
 
 Client-side selector for first plan meeting minimum requirements.
 
 - Endpoint sequence:
-  - `GET /api/service-plans`
+    - `GET /api/service-plans`
 - Parameters:
-  - `cores`: minimum CPU cores
-  - `memory_gb`: minimum memory in GB
-  - `storage_gb`: minimum storage in GB
+    - `cores`: minimum CPU cores
+    - `memory_gb`: minimum memory in GB
+    - `storage_gb`: minimum storage in GB
 - Returns:
-  - `ServicePlan` first match
-  - `None` if no plan satisfies constraints
+    - `ServicePlan` first match
+    - `None` if no plan satisfies constraints
 - Raises: common API exceptions
 
 ## Resource: `cloud.storage_buckets` (`StorageBucketsResource`)
@@ -568,8 +568,8 @@ Client-side selector for first plan meeting minimum requirements.
 
 - Endpoint: `GET /api/storage-buckets`
 - Parameters:
-  - Shared list args
-  - `name`: storage bucket name filter
+    - Shared list args
+    - `name`: storage bucket name filter
 - Returns: `list[StorageBucket]`
 - Raises: common API exceptions
 
@@ -582,27 +582,27 @@ Client-side selector for first plan meeting minimum requirements.
 ### `get_by_name(name: str) -> StorageBucket`
 
 - Endpoint sequence:
-  - `GET /api/storage-buckets?name=<name>&max=1`
+    - `GET /api/storage-buckets?name=<name>&max=1`
 - Returns: `StorageBucket`
 - Raises:
-  - common API exceptions
-  - `NotFoundError` when no match
+    - common API exceptions
+    - `NotFoundError` when no match
 
 ### `create(name: str, *, bucket_name: str, access_key: str, secret_key: str, endpoint: str, storage_server=None, default_backup_target=None, copy_to_store=None, default_deployment_target=None, default_virtual_image_target=None, retention_policy_type="none", retention_policy_days=None, retention_provider=None, create_bucket=True) -> StorageBucket`
 
 - Endpoint: `POST /api/storage-buckets`
 - Parameters:
-  - Required:
-    - `name`: storage bucket object name
-    - `bucket_name`: underlying S3 bucket/container name
-    - `access_key`, `secret_key`, `endpoint`: provider credentials/endpoint
-  - Optional target/default flags:
-    - `default_backup_target`, `copy_to_store`, `default_deployment_target`, `default_virtual_image_target`
-  - Optional retention behavior:
-    - `retention_policy_type`: `backup`, `delete`, or `none`
-    - `retention_policy_days`, `retention_provider`
-  - `storage_server`: optional storage server ID
-  - `create_bucket`: create target bucket when missing
+    - Required:
+        - `name`: storage bucket object name
+        - `bucket_name`: underlying S3 bucket/container name
+        - `access_key`, `secret_key`, `endpoint`: provider credentials/endpoint
+    - Optional target/default flags:
+        - `default_backup_target`, `copy_to_store`, `default_deployment_target`, `default_virtual_image_target`
+    - Optional retention behavior:
+        - `retention_policy_type`: `backup`, `delete`, or `none`
+        - `retention_policy_days`, `retention_provider`
+    - `storage_server`: optional storage server ID
+    - `create_bucket`: create target bucket when missing
 - Returns: `StorageBucket`
 - Raises: common API exceptions
 
@@ -618,8 +618,8 @@ Convenience wrapper for S3-backed create.
 
 - Endpoint: `PUT /api/storage-buckets/{storage_bucket_id}`
 - Parameters:
-  - `storage_bucket_id`: target ID
-  - Optional updates for name/bucket/config/defaults/retention
+    - `storage_bucket_id`: target ID
+    - Optional updates for name/bucket/config/defaults/retention
 - Returns: `StorageBucket`
 - Raises: common API exceptions
 
@@ -627,7 +627,7 @@ Convenience wrapper for S3-backed create.
 
 - Endpoint: `DELETE /api/storage-buckets/{storage_bucket_id}`
 - Parameters:
-  - `remove_resources`: when `True`, sends `removeResources=true`
+    - `remove_resources`: when `True`, sends `removeResources=true`
 - Returns: `True`
 - Raises: common API exceptions
 
@@ -637,8 +637,8 @@ Convenience wrapper for S3-backed create.
 
 - Endpoint: `GET /api/archives/buckets`
 - Parameters:
-  - Shared list args
-  - `name`: archive bucket name filter
+    - Shared list args
+    - `name`: archive bucket name filter
 - Returns: `list[ArchiveBucket]`
 - Raises: common API exceptions
 
@@ -651,22 +651,22 @@ Convenience wrapper for S3-backed create.
 ### `get_by_name(name: str) -> ArchiveBucket`
 
 - Endpoint sequence:
-  - `GET /api/archives/buckets?name=<name>&max=1`
+    - `GET /api/archives/buckets?name=<name>&max=1`
 - Returns: `ArchiveBucket`
 - Raises:
-  - common API exceptions
-  - `NotFoundError` when no match
+    - common API exceptions
+    - `NotFoundError` when no match
 
 ### `create(name: str, *, storage_provider_id: int, description=None, visibility="private", is_public=False, account_id=None) -> ArchiveBucket`
 
 - Endpoint: `POST /api/archives/buckets`
 - Parameters:
-  - `name`: globally unique archive bucket name
-  - `storage_provider_id`: linked storage bucket/provider ID
-  - `description`: optional description
-  - `visibility`: `private` or `public`
-  - `is_public`: enable anonymous public URL support
-  - `account_id`: optional tenant account override
+    - `name`: globally unique archive bucket name
+    - `storage_provider_id`: linked storage bucket/provider ID
+    - `description`: optional description
+    - `visibility`: `private` or `public`
+    - `is_public`: enable anonymous public URL support
+    - `account_id`: optional tenant account override
 - Returns: `ArchiveBucket`
 - Raises: common API exceptions
 
@@ -686,11 +686,11 @@ Convenience wrapper for S3-backed create.
 
 - Endpoint: `GET /api/archives/buckets/{bucket_name}/files/{remote_path}`
 - Parameters:
-  - `bucket_name`: archive bucket name (not storage provider name)
-  - `remote_path`: archive path to list (defaults to `/`)
-  - `name`: exact file name filter
-  - `phrase`: wildcard phrase filter
-  - `full_tree`: include nested paths
+    - `bucket_name`: archive bucket name (not storage provider name)
+    - `remote_path`: archive path to list (defaults to `/`)
+    - `name`: exact file name filter
+    - `phrase`: wildcard phrase filter
+    - `full_tree`: include nested paths
 - Returns: `list[ArchiveFile]`
 - Raises: common API exceptions
 
@@ -698,60 +698,60 @@ Convenience wrapper for S3-backed create.
 
 - Endpoint: `POST /api/archives/buckets/{bucket_name}/files/{remote_path}` (multipart)
 - Parameters:
-  - `bucket_name`: destination archive bucket name
-  - `remote_path`: destination directory path
-  - `local_path`: local file path to upload
-  - `filename`: optional destination filename override
+    - `bucket_name`: destination archive bucket name
+    - `remote_path`: destination directory path
+    - `local_path`: local file path to upload
+    - `filename`: optional destination filename override
 - Returns: `ArchiveFile`
 - Raises:
-  - common API exceptions
-  - `FileNotFoundError` if `local_path` does not exist
-  - `ValueError` for invalid filename (empty, hidden name, spaces, unsupported chars)
-  - `NotFoundError` with enriched message when destination bucket/path does not exist
+    - common API exceptions
+    - `FileNotFoundError` if `local_path` does not exist
+    - `ValueError` for invalid filename (empty, hidden name, spaces, unsupported chars)
+    - `NotFoundError` with enriched message when destination bucket/path does not exist
 
 ### `upload_directory(*, bucket_name: str, remote_path: str, local_directory: str | Path, recursive: bool = True, dry_run: bool = False, strict: bool = False) -> ArchiveDirectoryUploadResult`
 
 Bulk upload helper with preflight classification.
 
 - Endpoint behavior:
-  - Local preflight scan/validation
-  - Multiple `POST /api/archives/buckets/{bucket_name}/files/{destination_remote_path}` calls for eligible files
+    - Local preflight scan/validation
+    - Multiple `POST /api/archives/buckets/{bucket_name}/files/{destination_remote_path}` calls for eligible files
 - Parameters:
-  - `bucket_name`: destination archive bucket
-  - `remote_path`: base destination directory
-  - `local_directory`: source directory
-  - `recursive`: include nested files
-  - `dry_run`: only preflight, no uploads
-  - `strict`: abort upload phase if preflight has skipped files
+    - `bucket_name`: destination archive bucket
+    - `remote_path`: base destination directory
+    - `local_directory`: source directory
+    - `recursive`: include nested files
+    - `dry_run`: only preflight, no uploads
+    - `strict`: abort upload phase if preflight has skipped files
 - Returns: `ArchiveDirectoryUploadResult` with `scanned`, `eligible`, `skipped`, `uploaded`, `failed`, plus per-file details
 - Raises:
-  - `FileNotFoundError` if `local_directory` does not exist
-  - `NotADirectoryError` if `local_directory` is not a directory
-  - Other exceptions are generally captured into `failed_files`/`skipped_files` entries instead of being raised
+    - `FileNotFoundError` if `local_directory` does not exist
+    - `NotADirectoryError` if `local_directory` is not a directory
+    - Other exceptions are generally captured into `failed_files`/`skipped_files` entries instead of being raised
 
 ### `download_file(*, bucket_name: str, remote_path: str, local_path: str | Path | None = None) -> bytes | Path`
 
 - Endpoint: `GET /api/archives/download/{bucket_name}/{remote_path}`
 - Parameters:
-  - `local_path`: optional save target; when omitted returns bytes in memory
+    - `local_path`: optional save target; when omitted returns bytes in memory
 - Returns:
-  - `bytes` when `local_path` is `None`
-  - `Path` when written to disk
+    - `bytes` when `local_path` is `None`
+    - `Path` when written to disk
 - Raises:
-  - common API exceptions
-  - filesystem exceptions if writing to `local_path` fails
+    - common API exceptions
+    - filesystem exceptions if writing to `local_path` fails
 
 ### `copy_file(*, source_bucket_name: str, source_path: str, destination_bucket_name: str, destination_path: str | None = None, destination_filename: str | None = None) -> ArchiveFile`
 
 Copy helper implemented as download + upload.
 
 - Endpoint sequence:
-  - `GET /api/archives/download/{source_bucket_name}/{source_path}`
-  - `POST /api/archives/buckets/{destination_bucket_name}/files/{destination_path or "/"}`
+    - `GET /api/archives/download/{source_bucket_name}/{source_path}`
+    - `POST /api/archives/buckets/{destination_bucket_name}/files/{destination_path or "/"}`
 - Returns: copied `ArchiveFile`
 - Raises:
-  - common API exceptions
-  - any local/file validation exceptions from `download_file(...)` or `upload_file(...)`
+    - common API exceptions
+    - any local/file validation exceptions from `download_file(...)` or `upload_file(...)`
 
 ### `get_file(archive_file_id: int) -> ArchiveFile`
 
