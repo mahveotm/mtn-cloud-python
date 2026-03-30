@@ -2,7 +2,7 @@
 
 This page summarizes the public SDK surface.
 
-For endpoint-by-endpoint signatures, parameters, return types, and raised exceptions, see [API Reference](./api-reference.md).
+For endpoint-by-endpoint signatures, parameters, return types, and raised exceptions, see [API Reference](./api-reference/index.md).
 
 ## Entry Point
 
