@@ -13,6 +13,25 @@ from mtn_cloud.config import MTNCloudConfig
 class TestMTNCloudConfig:
     """Tests for configuration."""
 
+    @pytest.fixture(autouse=True)
+    def _clear_mtn_cloud_env(self, monkeypatch):
+        """Ensure host MTN_CLOUD_* env vars do not leak into config tests."""
+        keys = (
+            "MTN_CLOUD_TOKEN",
+            "MTN_CLOUD_USERNAME",
+            "MTN_CLOUD_PASSWORD",
+            "MTN_CLOUD_URL",
+            "MTN_CLOUD_API_VERSION",
+            "MTN_CLOUD_TIMEOUT",
+            "MTN_CLOUD_MAX_RETRIES",
+            "MTN_CLOUD_RETRY_DELAY",
+            "MTN_CLOUD_VERIFY_SSL",
+            "MTN_CLOUD_USER_AGENT",
+            "MTN_CLOUD_DEBUG",
+        )
+        for key in keys:
+            monkeypatch.delenv(key, raising=False)
+
     def test_default_values(self):
         """Test default configuration values."""
         config = MTNCloudConfig()

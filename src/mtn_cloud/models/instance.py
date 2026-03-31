@@ -329,8 +329,10 @@ class InstanceCreate(BaseModel):
     )
 
     # MTN Cloud Config Options
-    resource_pool_id: str | None = Field(
-        default=None, description="Resource pool ID (e.g., 'pool-214')"
+    resource_pool_id: str = Field(
+        ...,
+        min_length=1,
+        description="Resource pool ID (e.g., 'pool-214')",
     )
     availability_zone: str | None = Field(
         default=None, description="Availability zone (e.g., 'Lagos-AZ-1-fd1')"
@@ -416,8 +418,7 @@ class InstanceCreate(BaseModel):
         # MTN Cloud config at root level
         config: dict[str, Any] = {}
 
-        if self.resource_pool_id is not None:
-            config["resourcePoolId"] = self.resource_pool_id
+        config["resourcePoolId"] = self.resource_pool_id
         if self.availability_zone is not None:
             config["availabilityZone"] = self.availability_zone
         if self.security_group is not None:

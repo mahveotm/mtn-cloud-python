@@ -23,7 +23,6 @@ def main():
     print("\n1. Discovering available resources...")
 
     groups = cloud.groups.list()
-    plans = cloud.plans.list()
     networks = cloud.networks.list()
 
     if not groups:
@@ -32,12 +31,9 @@ def main():
 
     # Use first available group
     group = groups[0]
-    plan = plans[0] if plans else None
     network = networks[0] if networks else None
 
     print(f"   Group: {group.name} (ID: {group.id})")
-    if plan:
-        print(f"   Plan: {plan.name} (ID: {plan.id})")
     if network:
         print(f"   Network: {network.name} (ID: {network.id})")
 
@@ -83,7 +79,7 @@ def main():
     #         type="MTN-CS10",  # Adjust for your environment
     #         group=group.name,  # e.g., "MTNNG_CLOUD_AZ_1"
     #         layout=327,  # Adjust for your environment
-    #         plan=plan.id if plan else 6923,
+    #         plan=6923,  # Adjust for your environment
     #         resource_pool_id="pool-214",  # Your resource pool
     #         availability_zone="Lagos-AZ-1-fd1",  # Your availability zone
     #         security_group="default",

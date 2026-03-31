@@ -46,6 +46,7 @@ class MTNCloud:
             group="MTNNG_CLOUD_AZ_1",
             layout=327,
             plan=6923,
+            resource_pool_id="pool-214",
         )
 
         # Use as context manager

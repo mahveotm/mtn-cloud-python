@@ -154,6 +154,7 @@ instance = cloud.instances.create(
     group="MTNNG_CLOUD_AZ_1",
     layout=target_type.default_layout_id,
     plan=target_plan.id,
+    resource_pool_id="pool-214",
 )
 ```
 
@@ -172,7 +173,7 @@ instance = cloud.instances.create(
     group="MTNNG_CLOUD_AZ_1",
     layout=309,
     plan=6776,
+    resource_pool_id="pool-214",
 )
 logger.info("instance-created id=%s status=%s", instance.id, instance.status)
 ```
-

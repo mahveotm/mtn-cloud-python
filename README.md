@@ -88,20 +88,10 @@ groups = cloud.groups.list()
 for group in groups[:5]:
     print(group.id, group.name)
 
-# Clouds/zones
-clouds = cloud.clouds.list_openstack()
-for c in clouds[:5]:
-    print(c.id, c.name, c.type_code)
-
 # Instance types
 types = cloud.instance_types.list_os()
 for t in types[:5]:
     print(t.code, t.name, t.default_layout_id)
-
-# Service plans
-plans = cloud.plans.list()
-for p in plans[:5]:
-    print(p.id, p.name, p.cores, p.memory_gb)
 ```
 
 ### 2. Create an Instance
@@ -114,6 +104,7 @@ instance = cloud.instances.create(
     group="MTNNG_CLOUD_AZ_1",
     layout=327,
     plan=6776,
+    resource_pool_id="pool-214",
     labels=["production", "web"],
 )
 

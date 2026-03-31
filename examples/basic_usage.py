@@ -42,14 +42,6 @@ def main():
     for group in groups[:5]:
         print(f"   - {group.name} (ID: {group.id})")
 
-    # Service Plans
-    plans = cloud.plans.list()
-    print(f"\n📦 Service Plans ({len(plans)}):")
-    for plan in plans[:5]:
-        cores = plan.cores or "N/A"
-        memory = f"{plan.memory_gb:.1f}GB" if plan.memory_gb else "N/A"
-        print(f"   - {plan.name} ({cores} cores, {memory} RAM)")
-
     # Instances
     print("\n" + "-" * 50)
     print("Your Instances")

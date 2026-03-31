@@ -63,6 +63,7 @@ class TestInstanceCreate:
             group_id=621,  # Group ID is resolved by the resource
             layout=327,
             plan=6923,
+            resource_pool_id="pool-214",
         )
 
         payload = create.to_api_payload()
@@ -74,6 +75,7 @@ class TestInstanceCreate:
         assert payload["instance"]["site"]["id"] == 621
         assert payload["instance"]["layout"]["id"] == 327
         assert payload["instance"]["plan"]["id"] == 6923
+        assert payload["config"]["resourcePoolId"] == "pool-214"
 
     def test_create_with_mtn_cloud_config(self):
         """Test create payload with MTN Cloud config options."""
@@ -108,6 +110,7 @@ class TestInstanceCreate:
             group_id=621,
             layout=327,
             plan=6923,
+            resource_pool_id="pool-214",
             volumes=volumes,
         )
 
@@ -128,6 +131,7 @@ class TestInstanceCreate:
             group_id=621,
             layout=327,
             plan=6923,
+            resource_pool_id="pool-214",
             network_interfaces=networks,
         )
 

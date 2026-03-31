@@ -170,6 +170,7 @@ class InstancesResource(BaseResource[Instance]):
         group: str,
         layout: int,
         plan: int,
+        resource_pool_id: str,
         description: str | None = None,
         environment: str | None = None,
         labels: List[str] | None = None,
@@ -177,7 +178,6 @@ class InstancesResource(BaseResource[Instance]):
         copies: int = 1,
         layout_size: int = 1,
         # MTN Cloud config options
-        resource_pool_id: str | None = None,
         availability_zone: str | None = None,
         security_group: str = "default",
         os_external_network_id: str | None = None,
@@ -205,13 +205,13 @@ class InstancesResource(BaseResource[Instance]):
             group: Group name (e.g., 'MTNNG_CLOUD_AZ_1') - will be resolved to ID automatically
             layout: Layout ID (e.g., 327)
             plan: Service plan ID (e.g., 6923)
+            resource_pool_id: Resource pool ID (e.g., 'pool-214')
             description: Instance description
             environment: Environment code
             labels: Labels (keywords) list
             tags: Metadata tags dict (e.g., {"env": "prod"})
             copies: Number of copies to provision
             layout_size: Multiply factor of containers/vms
-            resource_pool_id: Resource pool ID (e.g., 'pool-214')
             availability_zone: Availability zone (e.g., 'Lagos-AZ-1-fd1')
             security_group: Security group name (default: 'default')
             os_external_network_id: External network for floating IP (e.g., 'public-network-01')

@@ -70,6 +70,7 @@ instance = cloud.instances.create(
     group="MTNNG_CLOUD_AZ_1",
     layout=327,
     plan=6923,
+    resource_pool_id="pool-214",  # from your project order context
 )
 
 print(instance.id, instance.name, instance.status, instance.primary_ip)

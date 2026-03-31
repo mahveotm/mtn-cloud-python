@@ -32,7 +32,7 @@
     - common API exceptions
     - `NotFoundError` when no instance matches
 
-### `create(name: str, *, cloud: str, type: str, group: str, layout: int, plan: int, description=None, environment=None, labels=None, tags=None, copies=1, layout_size=1, resource_pool_id=None, availability_zone=None, security_group="default", os_external_network_id=None, create_user=True, workflow_id=None, shutdown_days=None, expire_days=None, create_backup=None, security_groups=None, ports=None, volumes=None, network_interfaces=None, options=None) -> Instance`
+### `create(name: str, *, cloud: str, type: str, group: str, layout: int, plan: int, resource_pool_id: str, description=None, environment=None, labels=None, tags=None, copies=1, layout_size=1, availability_zone=None, security_group="default", os_external_network_id=None, create_user=True, workflow_id=None, shutdown_days=None, expire_days=None, create_backup=None, security_groups=None, ports=None, volumes=None, network_interfaces=None, options=None) -> Instance`
 
 - Endpoint sequence:
     - `GET /api/groups?name=<group>&max=1` (resolve group name to `group_id`)
@@ -45,12 +45,13 @@
         - `group`: group/site name (resolved to ID)
         - `layout`: layout ID
         - `plan`: service plan ID
+        - `resource_pool_id`: project resource pool ID
     - Optional metadata:
         - `description`, `environment`, `labels`, `tags`
     - Optional sizing/provisioning:
         - `copies`, `layout_size`
     - Optional MTN/OpenStack-specific provisioning:
-        - `resource_pool_id`, `availability_zone`, `security_group`, `os_external_network_id`, `create_user`
+        - `availability_zone`, `security_group`, `os_external_network_id`, `create_user`
     - Optional automation:
         - `workflow_id`, `shutdown_days`, `expire_days`, `create_backup`
     - Optional networking/storage details:
@@ -164,4 +165,3 @@ Client-side polling helper.
     - `max_results`: maps to query `max`
 - Returns: list from response key `processes`
 - Raises: common API exceptions
-
