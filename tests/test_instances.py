@@ -4,6 +4,8 @@ Tests for Instance models and resource.
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from mtn_cloud.models.instance import (
     Instance,
     InstanceCreate,
@@ -276,3 +278,90 @@ class TestInstancesResource:
         params = call_args[1]["params"]
         assert params["status"] == "running"
         assert params["zoneId"] == 1
+
+    def test_paginate_instances(self):
+        """Test page-by-page iteration using inherited paginate helper."""
+        mock_http = MagicMock()
+        page_1 = SAMPLE_INSTANCES_LIST
+        page_2 = {
+            "instances": [
+                {
+                    "id": 125,
+                    "name": "test-instance-3",
+                    "status": "running",
+                    "ipAddress": "192.168.1.102",
+                },
+                {
+                    "id": 126,
+                    "name": "test-instance-4",
+                    "status": "running",
+                    "ipAddress": "192.168.1.103",
+                },
+            ]
+        }
+        page_3 = {
+            "instances": [
+                {
+                    "id": 127,
+                    "name": "test-instance-5",
+                    "status": "stopped",
+                    "ipAddress": "192.168.1.104",
+                }
+            ]
+        }
+
+        def get_side_effect(path, params=None):
+            assert path == "/instances"
+            offset = (params or {}).get("offset", 0)
+            if offset == 0:
+                return page_1
+            if offset == 2:
+                return page_2
+            if offset == 4:
+                return page_3
+            return {"instances": []}
+
+        mock_http.get.side_effect = get_side_effect
+
+        resource = InstancesResource(mock_http)
+        pages = list(resource.paginate(page_size=2))
+
+        assert [len(page) for page in pages] == [2, 2, 1]
+        assert [page[0].id for page in pages] == [123, 125, 127]
+
+        first_params = mock_http.get.call_args_list[0][1]["params"]
+        second_params = mock_http.get.call_args_list[1][1]["params"]
+        third_params = mock_http.get.call_args_list[2][1]["params"]
+
+        assert first_params["max"] == 2
+        assert "offset" not in first_params
+        assert second_params["offset"] == 2
+        assert third_params["offset"] == 4
+
+    def test_iter_all_instances(self):
+        """Test flattened iteration using inherited iter_all helper."""
+        mock_http = MagicMock()
+        mock_http.get.return_value = SAMPLE_INSTANCES_LIST
+
+        resource = InstancesResource(mock_http)
+        items = list(resource.iter_all(page_size=5, status="running", cloud_id=1))
+
+        assert len(items) == 2
+        assert items[0].id == 123
+        assert items[1].id == 124
+
+        call_args = mock_http.get.call_args
+        params = call_args[1]["params"]
+        assert params["max"] == 5
+        assert params["status"] == "running"
+        assert params["zoneId"] == 1
+
+    def test_paginate_validation(self):
+        """Test paginate validates page size and offset values."""
+        resource = InstancesResource(MagicMock())
+
+        with pytest.raises(ValueError, match="page_size must be >= 1"):
+            list(resource.paginate(page_size=0))
+
+        with pytest.raises(ValueError, match="start_offset must be >= 0"):
+            list(resource.paginate(start_offset=-1))

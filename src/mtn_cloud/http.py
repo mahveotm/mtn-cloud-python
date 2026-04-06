@@ -13,7 +13,9 @@ from mtn_cloud.exceptions import (
     ForbiddenError,
     MTNCloudError,
     NotFoundError,
+    QuotaExceededError,
     RateLimitError,
+    ResourceConflictError,
     ServerError,
     ValidationError,
 )
@@ -132,10 +134,15 @@ class HTTPClient:
             )
 
             if response.status_code != 200:
+                response_payload: dict[str, Any] | None
+                try:
+                    response_payload = response.json() if response.text else None
+                except ValueError:
+                    response_payload = {"raw": response.text} if response.text else None
                 raise AuthenticationError(
                     f"Authentication failed: {response.text}",
                     status_code=response.status_code,
-                    response=response.json() if response.text else None,
+                    response=response_payload,
                 )
 
             result = response.json()
@@ -284,6 +291,7 @@ class HTTPClient:
             self._token = None
             raise AuthenticationError(
                 message=error_message,
+                status_code=status_code,
                 response=body,
                 request_id=request_id,
             )
@@ -297,6 +305,23 @@ class HTTPClient:
 
         if status_code == 404:
             raise NotFoundError(
+                message=error_message,
+                response=body,
+                request_id=request_id,
+            )
+
+        if status_code == 402:
+            raise QuotaExceededError(
+                message=error_message,
+                quota_type=body.get("quotaType") or body.get("quota"),
+                current=(body.get("current") if isinstance(body.get("current"), int) else None),
+                limit=body.get("limit") if isinstance(body.get("limit"), int) else None,
+                response=body,
+                request_id=request_id,
+            )
+
+        if status_code == 409:
+            raise ResourceConflictError(
                 message=error_message,
                 response=body,
                 request_id=request_id,

@@ -73,9 +73,10 @@ class AuthenticationError(MTNCloudError):
     def __init__(
         self,
         message: str = "Authentication failed. Check your API token.",
+        status_code: int = 401,
         **kwargs: Any,
     ) -> None:
-        super().__init__(message, status_code=401, **kwargs)
+        super().__init__(message, status_code=status_code, **kwargs)
 
 
 class ForbiddenError(MTNCloudError):

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from builtins import list as builtin_list
+from collections.abc import Iterator
 from typing import Any, Generic, TypeVar
 
 from mtn_cloud.http import HTTPClient
@@ -53,7 +55,7 @@ class BaseResource(Generic[T]):
             data = data[self._item_key]
         return self._model.model_validate(data)
 
-    def _parse_list(self, data: dict[str, Any]) -> list[T]:
+    def _parse_list(self, data: dict[str, Any]) -> builtin_list[T]:
         """
         Parse a list of items from API response.
 
@@ -66,6 +68,32 @@ class BaseResource(Generic[T]):
         items = data.get(self._list_key, [])
         return [self._model.model_validate(item) for item in items]
 
+    def _build_list_params(
+        self,
+        max_results: int | None = None,
+        offset: int = 0,
+        sort: str | None = None,
+        direction: str | None = None,
+        phrase: str | None = None,
+        **filters: Any,
+    ) -> dict[str, Any]:
+        """Build query parameters for list-style operations."""
+        params: dict[str, Any] = {}
+
+        if max_results is not None:
+            params["max"] = max_results
+        if offset > 0:
+            params["offset"] = offset
+        if sort:
+            params["sort"] = sort
+        if direction:
+            params["direction"] = direction
+        if phrase:
+            params["phrase"] = phrase
+
+        params.update(filters)
+        return params
+
     def list(
         self,
         max_results: int | None = None,
@@ -74,7 +102,7 @@ class BaseResource(Generic[T]):
         direction: str | None = None,
         phrase: str | None = None,
         **filters: Any,
-    ) -> list[T]:
+    ) -> builtin_list[T]:
         """
         List resources.
 
@@ -89,24 +117,105 @@ class BaseResource(Generic[T]):
         Returns:
             List of resources
         """
-        params: dict[str, Any] = {}
-
-        if max_results is not None:
-            params["max"] = max_results
-        if offset > 0:
-            params["offset"] = offset
-        if sort:
-            params["sort"] = sort
-        if direction:
-            params["direction"] = direction
-        if phrase:
-            params["phrase"] = phrase
-
-        # Add any additional filters
-        params.update(filters)
-
+        params = self._build_list_params(
+            max_results=max_results,
+            offset=offset,
+            sort=sort,
+            direction=direction,
+            phrase=phrase,
+            **filters,
+        )
         response = self._http.get(self._path, params=params)
         return self._parse_list(response)
+
+    def paginate(
+        self,
+        page_size: int = 100,
+        start_offset: int = 0,
+        sort: str | None = None,
+        direction: str | None = None,
+        phrase: str | None = None,
+        **filters: Any,
+    ) -> Iterator[builtin_list[T]]:
+        """
+        Iterate through resources page by page.
+
+        This helper repeatedly calls `list(...)` with `max_results=page_size`,
+        incrementing offset until the API returns a partial page or no items.
+
+        Args:
+            page_size: Number of items per page (must be >= 1)
+            start_offset: Initial pagination offset (must be >= 0)
+            sort: Field to sort by
+            direction: Sort direction ('asc' or 'desc')
+            phrase: Search phrase
+            **filters: Additional filters (resource-specific)
+
+        Yields:
+            Lists of resource model instances for each page
+
+        Raises:
+            ValueError: If `page_size` is less than 1 or `start_offset` is negative
+        """
+        if page_size < 1:
+            raise ValueError("page_size must be >= 1")
+        if start_offset < 0:
+            raise ValueError("start_offset must be >= 0")
+
+        offset = start_offset
+        while True:
+            page = self.list(
+                max_results=page_size,
+                offset=offset,
+                sort=sort,
+                direction=direction,
+                phrase=phrase,
+                **filters,
+            )
+            if not page:
+                break
+
+            yield page
+
+            if len(page) < page_size:
+                break
+
+            offset += len(page)
+
+    def iter_all(
+        self,
+        page_size: int = 100,
+        start_offset: int = 0,
+        sort: str | None = None,
+        direction: str | None = None,
+        phrase: str | None = None,
+        **filters: Any,
+    ) -> Iterator[T]:
+        """
+        Iterate through all resources item-by-item.
+
+        This helper flattens pages produced by `paginate(...)`.
+
+        Args:
+            page_size: Number of items per page (must be >= 1)
+            start_offset: Initial pagination offset (must be >= 0)
+            sort: Field to sort by
+            direction: Sort direction ('asc' or 'desc')
+            phrase: Search phrase
+            **filters: Additional filters (resource-specific)
+
+        Yields:
+            Individual resource model instances
+        """
+        for page in self.paginate(
+            page_size=page_size,
+            start_offset=start_offset,
+            sort=sort,
+            direction=direction,
+            phrase=phrase,
+            **filters,
+        ):
+            yield from page
 
     def get(self, resource_id: int) -> T:
         """

@@ -43,20 +43,15 @@ def get_or_create_archive_bucket(cloud, name: str, storage_provider_id: int):
 ## Pattern: Controlled Pagination
 
 ```python
-def list_all_instances(cloud, page_size: int = 100):
-    offset = 0
-    all_items = []
+# Iterate page-by-page
+for page in cloud.instances.paginate(page_size=100, status="running"):
+    print("page-size:", len(page))
+    for instance in page:
+        print(instance.id, instance.name)
 
-    while True:
-        page = cloud.instances.list(max_results=page_size, offset=offset)
-        if not page:
-            break
-        all_items.extend(page)
-        if len(page) < page_size:
-            break
-        offset += page_size
-
-    return all_items
+# Or flatten all items directly
+all_running = list(cloud.instances.iter_all(page_size=100, status="running"))
+print("total:", len(all_running))
 ```
 
 ## Pattern: Safe Bulk Upload with Preflight

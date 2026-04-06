@@ -57,7 +57,7 @@ Most resource managers implement a `list(...)` variant with these common query c
 | `phrase` | `phrase` | API-side search phrase |
 | `**filters` | passthrough | Extra endpoint-specific filters |
 
-## Shared Inherited Helper
+## Shared Inherited Helpers
 
 Every resource manager (`instances`, `networks`, `plans`, etc.) inherits:
 
@@ -70,6 +70,32 @@ Every resource manager (`instances`, `networks`, `plans`, etc.) inherits:
     - `False` only when `NotFoundError` occurs
 - Raises:
     - Any non-`NotFoundError` common API exception
+
+### `resource.paginate(page_size=100, start_offset=0, sort=None, direction=None, phrase=None, **filters) -> Iterator[list[Model]]`
+
+- Behavior:
+    - Repeatedly calls `list(...)` with `max_results=page_size`
+    - Increments pagination offset until a partial page or empty page is returned
+- Parameters:
+    - `page_size`: number of items per page (must be `>= 1`)
+    - `start_offset`: initial pagination offset (must be `>= 0`)
+    - `sort`, `direction`, `phrase`, `**filters`: same semantics as `list(...)`
+- Yields:
+    - `list[Model]` per page
+- Raises:
+    - `ValueError` for invalid pagination arguments
+    - common API exceptions from internal `list(...)` calls
+
+### `resource.iter_all(page_size=100, start_offset=0, sort=None, direction=None, phrase=None, **filters) -> Iterator[Model]`
+
+- Behavior:
+    - Flattens items from `paginate(...)`
+- Parameters:
+    - Same as `paginate(...)`
+- Yields:
+    - Individual resource model instances
+- Raises:
+    - Same as `paginate(...)`
 
 
 ## References
