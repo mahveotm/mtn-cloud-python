@@ -13,6 +13,11 @@ updates:
     labels:
       - "dependencies"
       - "python"
+    groups:
+      python-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -24,4 +29,8 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
-
+    groups:
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
