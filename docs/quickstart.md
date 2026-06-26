@@ -24,9 +24,9 @@ cloud = MTNCloud(token="your-api-token")
 cloud = MTNCloud()
 
 # Option C: username/password
-# MTN Cloud uses SubDomain\Username format. Your subdomain is shown in the
-# console under Administration → Users → Identity Sources.
-cloud = MTNCloud(username=r"mysubdomain\john.doe", password="your-password")
+cloud = MTNCloud(username="user@example.com", password="your-password")
+# Note: organisations using Active Directory/SSO must use SubDomain\Username
+# format instead of email (e.g., r"mysubdomain\john.doe").
 ```
 
 ## 3. Verify Connectivity
