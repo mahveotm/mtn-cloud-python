@@ -36,10 +36,12 @@ All HTTP-backed methods may raise these exceptions based on API response or tran
 | `AuthenticationError` | `401` or missing/invalid credentials |
 | `ForbiddenError` | `403` insufficient permission |
 | `NotFoundError` | `404` resource not found |
-| `ValidationError` | `400` invalid input/payload |
-| `RateLimitError` | `429` too many requests |
+| `ValidationError` | `400` invalid input/payload; carries `.errors` |
+| `QuotaExceededError` | `402` quota or limit exceeded; carries `.quota_type`, `.current`, `.limit` |
+| `ResourceConflictError` | `409` resource conflict or invalid state transition |
+| `RateLimitError` | `429` too many requests; carries `.retry_after` |
 | `ServerError` | `5xx` backend failure |
-| `TimeoutError` | request timeout |
+| `TimeoutError` | request timeout; carries `.timeout` |
 | `MTNCloudError` | connection errors, unknown status codes, generic request failures |
 
 Method-specific local exceptions (for example `FileNotFoundError`) are documented per method.

@@ -109,15 +109,18 @@ class NotFoundError(MTNCloudError):
 
     def __init__(
         self,
-        message: str = "Resource not found.",
+        message: str | None = None,
         resource_type: str | None = None,
         resource_id: Any | None = None,
         **kwargs: Any,
     ) -> None:
-        if resource_type and resource_id:
-            message = f"{resource_type} with ID '{resource_id}' not found."
-        elif resource_type:
-            message = f"{resource_type} not found."
+        if message is None:
+            if resource_type and resource_id:
+                message = f"{resource_type} with ID '{resource_id}' not found."
+            elif resource_type:
+                message = f"{resource_type} not found."
+            else:
+                message = "Resource not found."
 
         self.resource_type = resource_type
         self.resource_id = resource_id

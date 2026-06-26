@@ -177,6 +177,9 @@ class StorageBucketsResource(BaseResource[StorageBucket]):
         copy_to_store: bool | None = None,
         default_deployment_target: bool | None = None,
         default_virtual_image_target: bool | None = None,
+        retention_policy_type: Literal["backup", "delete", "none"] | None = "none",
+        retention_policy_days: int | None = None,
+        retention_provider: str | None = None,
     ) -> StorageBucket:
         """
         Create an S3-compatible storage bucket.
@@ -193,6 +196,9 @@ class StorageBucketsResource(BaseResource[StorageBucket]):
             copy_to_store: Archive snapshots to this store
             default_deployment_target: Mark as default deployment target
             default_virtual_image_target: Mark as default virtual image target
+            retention_policy_type: Cleanup mode (`backup`, `delete`, `none`)
+            retention_policy_days: Days before cleanup
+            retention_provider: Backup target store for retention mode `backup`
         """
         return self.create(
             name=name,
@@ -206,6 +212,9 @@ class StorageBucketsResource(BaseResource[StorageBucket]):
             default_deployment_target=default_deployment_target,
             default_virtual_image_target=default_virtual_image_target,
             create_bucket=create_bucket,
+            retention_policy_type=retention_policy_type,
+            retention_policy_days=retention_policy_days,
+            retention_provider=retention_provider,
         )
 
     def update(

@@ -8,7 +8,9 @@ from mtn_cloud.exceptions import (
     ForbiddenError,
     MTNCloudError,
     NotFoundError,
+    QuotaExceededError,
     RateLimitError,
+    ResourceConflictError,
     ServerError,
     TimeoutError,
     ValidationError,
@@ -30,5 +32,7 @@ __all__ = [
     "ServerError",
     "ForbiddenError",
     "TimeoutError",
+    "QuotaExceededError",
+    "ResourceConflictError",
     "__version__",
 ]
