@@ -287,9 +287,6 @@ class HTTPClient:
             )
 
         if status_code == 401:
-            # Only clear cached token when we can re-authenticate via username/password.
-            # For static token auth, preserve the token so the client stays usable
-            # and subsequent calls surface the same 401 rather than "no credentials".
             if self.config.username and self.config.password:
                 self._token = None
             raise AuthenticationError(

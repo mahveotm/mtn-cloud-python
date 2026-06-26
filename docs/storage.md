@@ -1,40 +1,44 @@
 # Storage
 
-Use this guide for MTN Object Storage onboarding and SDK storage/archive flows.
+Use this guide for MTN Object Storage onboarding and all SDK storage and archive operations.
 
-## Before You Start
+## Before You Start: Order MTN Object Storage
 
-To use storage APIs, first order **MTN Object Storage** from:
-`Provisioning -> Catalog`.
+MTN Object Storage (MOS) is ordered separately from compute resources. You must do this in the console once before any storage SDK calls will work.
 
-After ordering, your credentials are sent by email:
-- Access key
-- Secret key
-- Endpoint URL
+1. Go to **Provisioning → Catalog** and select **MTN Object Storage**.
+2. Click **Order Now**. The status shows "submitted" while credentials are generated.
+3. Your **access key**, **secret key**, and **endpoint URL** arrive by email.
 
-You will use these values when creating your storage provider in the SDK.
-MTN Object Storage on this platform is hosted in Lagos.
+The Lagos endpoint is: `https://ps1csp-s3.ict.mtn.com.ng:9021`
 
-## MTN Object Storage
+Keep the email — these credentials are passed directly into the SDK for every storage call.
 
-MTN Object Storage is a scalable, secure, and highly available service on the
-MTN Cloud Platform for storing and accessing data.
+## Storage vs Archive: How the SDK Models This
+
+MTN Object Storage is S3-compatible. The SDK splits management into two layers:
+
+| Resource | SDK manager | What it represents |
+|---|---|---|
+| Storage provider | `cloud.storage_buckets` | The connection to MOS — credentials, endpoint, backing bucket |
+| Archive bucket | `cloud.archive_buckets` | A logical file container linked to a storage provider |
+
+File operations (upload, download, list, copy, delete) all go through the archive bucket layer.
+You create the storage provider once, then create one or more archive buckets on top of it.
 
 ## Pricing (As Shared by MTN Cloud)
 
-- `₦0.07` per GB per hour
-- `₦2` per GB per day
-- `₦50` per GB per month
+| Period | Rate |
+|---|---|
+| Per hour | ₦0.07 per GB |
+| Per day | ₦2 per GB |
+| Per month | ₦50 per GB |
 
-Confirm current pricing in the Catalog before budgeting or automation rollouts.
+Confirm current pricing in the Catalog before budgeting.
 
-## Storage vs Archive in the SDK
+## Create a Storage Provider and Archive Bucket
 
-- `cloud.storage_buckets`: provider configuration (endpoint, keys, backing bucket)
-- `cloud.archive_buckets`: logical file container linked to a storage provider
-- File operations (upload/list/download/copy/delete) happen through archive APIs
-
-## Create Storage Provider and Archive Bucket
+Pass the credentials from your MOS email directly. `create_bucket=True` tells the platform to create the backing bucket and enable path-style access — both are required for MOS to work.
 
 ```python
 from mtn_cloud import MTNCloud
@@ -44,10 +48,10 @@ cloud = MTNCloud(token="your-api-token")
 storage = cloud.storage_buckets.create_s3(
     name="my-s3-storage",
     bucket_name="my-app-objects",
-    access_key="your-access-key",          # from email
-    secret_key="your-secret-key",          # from email
-    endpoint="https://your-endpoint",      # from email
-    create_bucket=True,
+    access_key="your-access-key",                         # from email
+    secret_key="your-secret-key",                         # from email
+    endpoint="https://ps1csp-s3.ict.mtn.com.ng:9021",    # Lagos endpoint from email
+    create_bucket=True,                                   # required for MOS
 )
 
 archive = cloud.archive_buckets.create(
@@ -61,6 +65,8 @@ print(storage.id, archive.id)
 
 ## Upload and List Files
 
+Filenames cannot contain spaces, dots at the start, or special characters (`\ / : * ? " < > | # % & + ' ; = ^`).
+
 ```python
 uploaded = cloud.archive_buckets.upload_file(
     bucket_name=archive.name,
@@ -72,7 +78,7 @@ print(uploaded.id, uploaded.name)
 files = cloud.archive_buckets.list_files(
     bucket_name=archive.name,
     remote_path="/",
-    full_tree=True,
+    full_tree=True,     # include subdirectories
 )
 print(f"Files: {len(files)}")
 ```
@@ -97,14 +103,14 @@ print(
 )
 ```
 
-For deeper patterns, see [Advanced Cookbook](./advanced-cookbook.md#pattern-safe-bulk-upload-with-preflight).
+For a safe preflight-before-upload pattern, see [Advanced Cookbook](./advanced-cookbook.md#pattern-safe-bulk-upload-with-preflight).
 
 ## Download a File
 
-`download_file` returns raw bytes when no `local_path` is given, or writes the file and returns the path when one is provided.
+Returns raw bytes when no `local_path` is given, or writes to disk and returns the path.
 
 ```python
-# Return bytes directly
+# Return bytes
 content = cloud.archive_buckets.download_file(
     bucket_name=archive.name,
     remote_path="/imports/report.csv",
@@ -130,13 +136,13 @@ cloud.archive_buckets.copy_file(
     source_path="/imports/report.csv",
     destination_bucket_name="my-backup-archives",
     destination_path="/backups/",
-    destination_filename="report-2026-06-26.csv",  # optional rename
+    destination_filename="report-backup.csv",   # optional rename
 )
 ```
 
 ## Delete a File
 
-Files are deleted by their numeric ID, which is available on the `ArchiveFile` model returned by `list_files` or `upload_file`.
+Files are deleted by numeric ID, available on the `ArchiveFile` model returned by `list_files` or `upload_file`.
 
 ```python
 files = cloud.archive_buckets.list_files(
@@ -148,9 +154,9 @@ for f in files:
     cloud.archive_buckets.delete_file(f.id)
 ```
 
-## Retention Policy on Storage Buckets
+## Retention Policy
 
-When creating a storage bucket you can set a retention policy that controls how old objects are handled:
+Set a retention policy on the storage provider to automatically clean up old objects:
 
 ```python
 storage = cloud.storage_buckets.create_s3(
@@ -158,9 +164,15 @@ storage = cloud.storage_buckets.create_s3(
     bucket_name="my-app-objects",
     access_key="your-access-key",
     secret_key="your-secret-key",
-    endpoint="https://your-endpoint",
+    endpoint="https://ps1csp-s3.ict.mtn.com.ng:9021",
     create_bucket=True,
-    retention_policy_type="delete",   # "backup", "delete", or "none" (default)
-    retention_policy_days=30,         # delete objects older than 30 days
+    retention_policy_type="delete",     # "backup", "delete", or "none" (default)
+    retention_policy_days=30,           # remove objects older than 30 days
 )
 ```
+
+## Regenerating Credentials
+
+If your MOS secret key is compromised, regenerate it from **Provisioning → Catalog → MTN Object Storage**. The platform sends new credentials to all tenancy users by email and automatically revalidates linked storage buckets. Access keys are not changed during regeneration.
+
+After regenerating, update your SDK calls (or env vars) with the new secret key.

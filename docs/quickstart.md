@@ -1,6 +1,6 @@
 # Quickstart
 
-This guide helps you go from zero to useful operations quickly.
+This guide takes you from zero to provisioning real resources on MTN Cloud without needing to read the full platform documentation.
 
 ## 1. Install
 
@@ -10,7 +10,8 @@ pip install mtn-cloud
 
 ## 2. Authenticate
 
-Choose one method.
+**Get your API token** from the MTN Cloud Console:
+User icon (top-right) → **User Settings** → **API Access** → copy the token.
 
 ```python
 from mtn_cloud import MTNCloud
@@ -18,12 +19,14 @@ from mtn_cloud import MTNCloud
 # Option A: token (recommended)
 cloud = MTNCloud(token="your-api-token")
 
-# Option B: environment variable
+# Option B: environment variable — no code change needed per environment
 # export MTN_CLOUD_TOKEN="your-api-token"
 cloud = MTNCloud()
 
 # Option C: username/password
-cloud = MTNCloud(username="user@example.com", password="your-password")
+# MTN Cloud uses SubDomain\Username format. Your subdomain is shown in the
+# console under Administration → Users → Identity Sources.
+cloud = MTNCloud(username=r"mysubdomain\john.doe", password="your-password")
 ```
 
 ## 3. Verify Connectivity
@@ -34,19 +37,47 @@ print(f"Connected as: {user.username} ({user.email})")
 print("Ping:", cloud.ping())
 ```
 
-## 4. Understand Platform Prerequisites
+## 4. Platform Prerequisites
 
-- For instances, order a project from `Provisioning -> Catalog`.
-- For storage, order MTN Object Storage from the same Catalog section.
+The SDK manages resources that must first be set up through the MTN Cloud Console. Do these steps once per project — they take a few minutes each.
 
-Then read:
-- [Instances](./instances.md)
-- [Networking](./networking.md)
-- [Storage](./storage.md)
+### Create a Resource Pool (required before instances)
+
+A **Resource Pool** (also called a Project) is your isolated compute workspace.
+Every instance you create via the SDK belongs to one.
+
+1. In the console, go to **Provisioning → Catalog** and select **Create Project**.
+2. Fill in: Group (e.g., `MTNNG_CLOUD_AZ_1`), Cloud, a unique project name, and an optional description.
+3. Click Order. **Wait approximately 10 minutes** for provisioning to complete.
+4. Your `resource_pool_id` (e.g., `pool-214`) will appear in the provisioning context once ready.
+
+One tenancy can have multiple resource pools — useful for separating dev, staging, and production.
+
+### Set up a security group (required before instances)
+
+Security groups are the firewall layer for your VMs. Without one, you will not be able to SSH or RDP in after provisioning.
+
+1. Go to **Infrastructure → Network → Security Groups** and create a group.
+2. Add an inbound rule: SSH port 22 (TCP) for Linux VMs, or RDP port 3389 (TCP) for Windows VMs.
+3. Restrict the source to your IP range, e.g., `200.200.113.15/32` for a single machine.
+
+The group name (e.g., `"default"`) is passed as the `security_group` parameter when creating an instance.
+
+Optionally, add an SSH key pair under **User Settings → SSH Keys** for key-based access.
+
+### Order MTN Object Storage (required before storage)
+
+1. Go to **Provisioning → Catalog** and select **MTN Object Storage → Order Now**.
+2. The platform generates your credentials — the status shows "submitted".
+3. Your **access key**, **secret key**, and **endpoint URL** arrive by email.
+
+The Lagos endpoint is: `https://ps1csp-s3.ict.mtn.com.ng:9021`
+
+Keep the credentials from that email — you will pass them directly into the SDK.
 
 ## 5. Discover Core Reference Data
 
-Before creating resources, discover your valid IDs and codes.
+Before creating resources, look up the valid IDs and codes for your account. These are tenant-specific and cannot be copied from documentation or other accounts.
 
 ```python
 groups = cloud.groups.list()
@@ -60,7 +91,11 @@ print("Instance types:", [(t.code, t.default_layout_id) for t in instance_types[
 print("Plans:", [(p.id, p.name, p.cores, p.memory_gb) for p in plans[:5]])
 ```
 
+MTN Cloud currently has two live zones: **Lagos AZ1** (`MTNNG_CLOUD_AZ_1`) and **Lagos AZ2** (`MTNNG_CLOUD_AZ_2`).
+
 ## 6. Create an Instance
+
+Replace `resource_pool_id` with the value from your project order, and `security_group` with the group you created.
 
 ```python
 instance = cloud.instances.create(
@@ -70,7 +105,9 @@ instance = cloud.instances.create(
     group="MTNNG_CLOUD_AZ_1",
     layout=327,
     plan=6923,
-    resource_pool_id="pool-214",  # from your project order context
+    resource_pool_id="pool-214",        # from your project order
+    availability_zone="Lagos-AZ-1-fd1",
+    security_group="default",           # security group name from the console
 )
 
 print(instance.id, instance.name, instance.status, instance.primary_ip)
@@ -86,19 +123,26 @@ instance.refresh()
 print(instance.status)
 ```
 
-## 8. Work with Storage + Archives
+## 8. Work with Storage and Archives
+
+Use the access key, secret key, and endpoint from the email you received after ordering MTN Object Storage.
 
 ```python
-# Create storage provider (S3-compatible)
+from mtn_cloud import MTNCloud
+
+cloud = MTNCloud(token="your-api-token")
+
+# Register the storage provider with your MOS credentials
 storage = cloud.storage_buckets.create_s3(
     name="my-s3-storage",
     bucket_name="my-bucket",
-    access_key="AKIA...",
-    secret_key="...",
-    endpoint="https://s3.example.com",
+    access_key="your-access-key",                         # from email
+    secret_key="your-secret-key",                         # from email
+    endpoint="https://ps1csp-s3.ict.mtn.com.ng:9021",    # Lagos endpoint
+    create_bucket=True,
 )
 
-# Create archive bucket attached to that storage provider
+# Create a logical archive bucket on top of the storage provider
 archive = cloud.archive_buckets.create(
     name="my-archive-bucket",
     storage_provider_id=storage.id,
