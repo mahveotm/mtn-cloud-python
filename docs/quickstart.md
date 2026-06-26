@@ -117,7 +117,13 @@ print(uploaded.id, uploaded.name)
 ## 9. Minimal Error Handling
 
 ```python
-from mtn_cloud import MTNCloudError, NotFoundError, ValidationError
+from mtn_cloud import (
+    MTNCloudError,
+    NotFoundError,
+    QuotaExceededError,
+    ResourceConflictError,
+    ValidationError,
+)
 
 try:
     cloud.instances.get(999999)
@@ -125,6 +131,10 @@ except NotFoundError:
     print("Instance does not exist")
 except ValidationError as exc:
     print(f"Validation failed: {exc}")
+except QuotaExceededError as exc:
+    print(f"Quota exceeded: {exc.quota_type} ({exc.current}/{exc.limit})")
+except ResourceConflictError as exc:
+    print(f"Conflict: {exc}")
 except MTNCloudError as exc:
     print(f"SDK/API error: {exc}")
 ```

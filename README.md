@@ -221,7 +221,9 @@ from mtn_cloud import (
     AuthenticationError,
     MTNCloudError,
     NotFoundError,
+    QuotaExceededError,
     RateLimitError,
+    ResourceConflictError,
     ValidationError,
 )
 
@@ -233,6 +235,10 @@ except AuthenticationError:
     print("Authentication failed")
 except ValidationError as exc:
     print(f"Validation error: {exc}")
+except QuotaExceededError as exc:
+    print(f"Quota exceeded: {exc.quota_type} ({exc.current}/{exc.limit})")
+except ResourceConflictError as exc:
+    print(f"Conflict: {exc}")
 except RateLimitError as exc:
     print(f"Rate limited, retry_after={exc.retry_after}")
 except MTNCloudError as exc:
@@ -246,6 +252,8 @@ Environment variables:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `MTN_CLOUD_TOKEN` | API access token | - |
+| `MTN_CLOUD_USERNAME` | Login username (alternative to token) | - |
+| `MTN_CLOUD_PASSWORD` | Login password (alternative to token) | - |
 | `MTN_CLOUD_URL` | API base URL | `https://console.cloud.mtn.ng` |
 | `MTN_CLOUD_TIMEOUT` | Request timeout in seconds | `30` |
 | `MTN_CLOUD_MAX_RETRIES` | Maximum retry attempts | `3` |

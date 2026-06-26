@@ -58,15 +58,17 @@ Base:
 - `MTNCloudError`
 
 Specialized:
-- `AuthenticationError`
-- `ForbiddenError`
-- `NotFoundError`
-- `ValidationError`
-- `RateLimitError`
-- `ServerError`
-- `TimeoutError`
+- `AuthenticationError` — 401, bad/expired token or missing credentials
+- `ForbiddenError` — 403, insufficient permissions
+- `NotFoundError` — 404, resource does not exist
+- `ValidationError` — 400, invalid input; carries `.errors` list
+- `QuotaExceededError` — 402, limit reached; carries `.quota_type`, `.current`, `.limit`
+- `ResourceConflictError` — 409, duplicate or invalid state transition
+- `RateLimitError` — 429, too many requests; carries `.retry_after`
+- `ServerError` — 5xx backend failures
+- `TimeoutError` — request timeout; carries `.timeout`
 
-Catch specific exceptions first, then fallback to `MTNCloudError`.
+Catch specific exceptions first, then fall back to `MTNCloudError`.
 
 ## Response Models
 

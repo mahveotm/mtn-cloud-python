@@ -133,7 +133,7 @@ class ArchiveBucketsResource(BaseResource[ArchiveBucket]):
             storage_provider_id=storage_provider_id,
             description=description,
             visibility=visibility,
-            isPublic=is_public,
+            is_public=is_public,
             account_id=account_id,
         )
         return self._create(create_model.to_api_payload())
@@ -163,7 +163,7 @@ class ArchiveBucketsResource(BaseResource[ArchiveBucket]):
             name=name,
             description=description,
             visibility=visibility,
-            isPublic=is_public,
+            is_public=is_public,
             account_id=account_id,
         )
         return self._update(archive_bucket_id, update_model.to_api_payload())

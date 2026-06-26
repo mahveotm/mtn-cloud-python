@@ -70,6 +70,12 @@ allocated = cloud.networks.allocate_floating_ip(
 print(allocated.id, allocated.ip_address)
 ```
 
+## Delete a Network
+
+```python
+cloud.networks.delete(new_network.id)
+```
+
 ## Notes
 
 - Many networking fields are provider-specific; OpenStack-compatible fields are

@@ -54,9 +54,38 @@ instance = cloud.instances.get(instance.id)
 instance.stop()
 instance.start()
 instance.restart()
-instance.refresh()
+instance.suspend()   # suspend (pause billing) — resume with start()
+instance.refresh()   # re-fetch latest state from API in-place
 
 cloud.instances.resize(instance.id, plan_id=6780)
+```
+
+## Delete an Instance
+
+```python
+# Default: delete instance and its volumes
+cloud.instances.delete(instance.id)
+
+# Keep volumes after deleting the instance
+cloud.instances.delete(instance.id, preserve_volumes=True)
+
+# Force-delete a stuck instance
+cloud.instances.delete(instance.id, force=True)
+```
+
+## Wait for a Status
+
+Use these helpers after triggering an action so your script blocks until the instance reaches the expected state. They poll every 5 seconds and raise `TimeoutError` after the timeout.
+
+```python
+cloud.instances.stop(instance.id)
+cloud.instances.wait_until_stopped(instance.id, timeout=120)
+
+cloud.instances.start(instance.id)
+cloud.instances.wait_until_running(instance.id, timeout=300)
+
+# Or wait for any specific status
+cloud.instances.wait_for_status(instance.id, "suspended", timeout=120)
 ```
 
 ## Discover Required IDs and Codes

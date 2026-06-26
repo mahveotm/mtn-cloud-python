@@ -94,7 +94,9 @@ from mtn_cloud import (
     AuthenticationError,
     MTNCloudError,
     NotFoundError,
+    QuotaExceededError,
     RateLimitError,
+    ResourceConflictError,
     ValidationError,
 )
 
@@ -108,6 +110,14 @@ try:
     )
 except AuthenticationError:
     # Token missing/expired.
+    raise
+except QuotaExceededError as exc:
+    # Account limit reached for this resource type.
+    print(f"Quota exceeded: {exc.quota_type} ({exc.current}/{exc.limit})")
+    raise
+except ResourceConflictError as exc:
+    # Resource already exists or is in an incompatible state.
+    print(f"Conflict: {exc}")
     raise
 except RateLimitError as exc:
     # Use retry_after where available.
