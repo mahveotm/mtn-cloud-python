@@ -106,33 +106,36 @@ for plan in cloud.instances.list_service_plans(
     print(plan["id"], plan["name"])
 ```
 
-A **resource pool is required** to create an instance — it's where the VM is hosted. Discover it by group name (the cloud/zone is resolved for you), or fetch one directly by name:
-
-```python
-pool = cloud.instances.get_resource_pool(
-    "my-project-name",
-    group="MTNNG_CLOUD_AZ_1",
-)
-print(pool.code)   # e.g. "pool-214" — pass this as resource_pool_id
-```
+A **resource pool is required** to create an instance — it's where the VM is hosted. `provision()` (below) discovers it for you; or fetch one yourself with `cloud.instances.get_resource_pool("my-project", group="MTNNG_CLOUD_AZ_1")`.
 
 ### 2. Create an Instance
 
-```python
-pool = cloud.instances.get_resource_pool("my-project-name", group="MTNNG_CLOUD_AZ_1")
+The guided `provision()` resolves layout, plan, and resource pool from names — the fastest path:
 
+```python
+instance = cloud.instances.provision(
+    name="web-01",
+    type="MTN-CS10",                # type code
+    group="MTNNG_CLOUD_AZ_1",       # also used as the cloud/zone
+    plan="G2S4",                    # plan name (or numeric id)
+    resource_pool="my-project",     # pool name; auto-selected if the group has only one
+)
+print(instance.id, instance.status, instance.primary_ip)
+```
+
+For full control over every ID, use `create()` directly:
+
+```python
 instance = cloud.instances.create(
-    name="my-server",
+    name="web-01",
     cloud="MTNNG_CLOUD_AZ_1",
     type="MTN-CS10",
     group="MTNNG_CLOUD_AZ_1",
     layout=327,
     plan=6776,
-    resource_pool_id=pool.code,   # "pool-214" — or pass the numeric ID 214
+    resource_pool_id="pool-214",    # or the numeric ID 214
     labels=["production", "web"],
 )
-
-print(f"Created: {instance.id} {instance.name} ({instance.status})")
 ```
 
 ### 3. Manage an Instance

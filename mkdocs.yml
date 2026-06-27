@@ -54,6 +54,7 @@ nav:
   - Security Groups: security-groups.md
   - Backups: backups.md
   - Virtual Images: virtual-images.md
+  - Recipes: recipes.md
   - Advanced Cookbook: advanced-cookbook.md
   - API Overview: api-overview.md
   - API Reference:

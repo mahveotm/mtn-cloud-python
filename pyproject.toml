@@ -21,7 +21,9 @@ keywords = [
     "sdk",
     "api",
     "infrastructure",
-    "devops"
+    "devops",
+    "cloud-management",
+    "mtn-cloud-python"    
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -50,8 +52,6 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "pytest-asyncio>=0.21.0",
-    "respx>=0.20.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
     "types-requests>=2.28.0",
@@ -121,4 +121,3 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-asyncio_mode = "auto"

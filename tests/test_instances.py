@@ -5,6 +5,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from mtn_cloud.exceptions import ValidationError
+from mtn_cloud.models.group import Group
 from mtn_cloud.models.instance import (
     Instance,
     InstanceCreate,
@@ -547,3 +549,111 @@ class TestInstancesResource:
             return pages.get(offset, {"instances": []})
 
         mock_http.get.side_effect = get_side_effect
+
+
+def _provision_group() -> Group:
+    """A group with one cloud/zone, for provision helper tests."""
+    return Group.model_validate({"id": 621, "name": "MTNNG_CLOUD_AZ_1", "zones": [{"id": 4}]})
+
+
+class TestProvision:
+    """Tests for the guided provision() helper and its resolvers."""
+
+    def test_resolve_plan_id_passes_int_through(self, resource: InstancesResource) -> None:
+        """A numeric plan is used directly without a lookup."""
+        assert resource._resolve_plan_id(6776, zone_id=4, layout_id=327, group_id=621) == 6776
+
+    def test_resolve_plan_id_by_name(
+        self, resource: InstancesResource, mock_http: MagicMock
+    ) -> None:
+        """A plan name resolves to its ID from the live plan list."""
+        mock_http.get.return_value = {
+            "plans": [{"id": 1, "name": "G1S1"}, {"id": 6776, "name": "G2S4"}]
+        }
+
+        assert resource._resolve_plan_id("G2S4", zone_id=4, layout_id=327, group_id=621) == 6776
+
+    def test_resolve_plan_id_unknown_lists_available(
+        self, resource: InstancesResource, mock_http: MagicMock
+    ) -> None:
+        """An unknown plan name raises with the available names."""
+        mock_http.get.return_value = {"plans": [{"id": 1, "name": "G1S1"}]}
+
+        with pytest.raises(ValidationError, match="G1S1"):
+            resource._resolve_plan_id("G99", zone_id=4, layout_id=327, group_id=621)
+
+    def test_resolve_pool_int_is_normalized(self, resource: InstancesResource) -> None:
+        """A numeric pool ID is normalized to its code with no lookup."""
+        assert resource._resolve_provision_pool(214, _provision_group()) == "pool-214"
+
+    def test_resolve_pool_auto_selects_single(
+        self, resource: InstancesResource, mock_http: MagicMock
+    ) -> None:
+        """With exactly one pool, it is auto-selected when none is given."""
+        mock_http.get.return_value = {
+            "data": [{"id": 230, "value": "pool-230", "name": "only-project"}]
+        }
+
+        assert resource._resolve_provision_pool(None, _provision_group()) == "pool-230"
+
+    def test_resolve_pool_multiple_requires_choice(
+        self, resource: InstancesResource, mock_http: MagicMock
+    ) -> None:
+        """With several pools and none given, the error lists them."""
+        mock_http.get.return_value = {
+            "data": [
+                {"id": 1, "value": "pool-1", "name": "alpha"},
+                {"id": 2, "value": "pool-2", "name": "beta"},
+            ]
+        }
+
+        with pytest.raises(ValidationError, match="alpha"):
+            resource._resolve_provision_pool(None, _provision_group())
+
+    def test_provision_dry_run_resolves_config(
+        self, resource: InstancesResource, mock_http: MagicMock
+    ) -> None:
+        """dry_run returns the resolved config without creating anything."""
+
+        def route(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+            if path.startswith("/groups"):
+                return {"groups": [{"id": 621, "name": "MTNNG_CLOUD_AZ_1", "zones": [{"id": 4}]}]}
+            if path.startswith("/instance-types"):
+                return {
+                    "instanceTypes": [
+                        {
+                            "id": 1,
+                            "name": "CS10",
+                            "code": "MTN-CS10",
+                            "instanceTypeLayouts": [{"id": 327, "name": "single"}],
+                        }
+                    ]
+                }
+            if "service-plans" in path:
+                return {"plans": [{"id": 6776, "name": "G2S4"}]}
+            if "zonePools" in path:
+                return {"data": [{"id": 230, "value": "pool-230", "name": "my-project"}]}
+            raise AssertionError(f"Unexpected path: {path}")
+
+        mock_http.get.side_effect = route
+
+        config = resource.provision(
+            name="web-01",
+            type="MTN-CS10",
+            group="MTNNG_CLOUD_AZ_1",
+            plan="G2S4",
+            dry_run=True,
+        )
+
+        assert config == {
+            "name": "web-01",
+            "cloud": "MTNNG_CLOUD_AZ_1",
+            "type": "MTN-CS10",
+            "group": "MTNNG_CLOUD_AZ_1",
+            "layout": 327,
+            "plan": 6776,
+            "resource_pool_id": "pool-230",
+            "availability_zone": None,
+            "security_group": "default",
+        }
+        mock_http.post.assert_not_called()

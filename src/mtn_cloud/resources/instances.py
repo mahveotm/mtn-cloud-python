@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING, Any, Dict, List
 
-from mtn_cloud.exceptions import NotFoundError, TimeoutError
+from mtn_cloud.exceptions import NotFoundError, TimeoutError, ValidationError
 from mtn_cloud.models.group import Group
 from mtn_cloud.models.instance import (
     Instance,
@@ -304,6 +304,190 @@ class InstancesResource(BaseResource[Instance]):
 
         payload = create_model.to_api_payload()
         return self._create(payload)
+
+    def provision(
+        self,
+        name: str,
+        *,
+        type: str,
+        group: str,
+        plan: str | int,
+        resource_pool: str | int | None = None,
+        cloud: str | None = None,
+        availability_zone: str | None = None,
+        security_group: str = "default",
+        wait: bool = True,
+        timeout: int = 600,
+        dry_run: bool = False,
+        description: str | None = None,
+        environment: str | None = None,
+        labels: List[str] | None = None,
+        tags: Dict[str, str] | None = None,
+        copies: int = 1,
+        layout_size: int = 1,
+        os_external_network_id: str | None = None,
+        create_user: bool = True,
+        workflow_id: int | None = None,
+        shutdown_days: int | None = None,
+        expire_days: int | None = None,
+        create_backup: bool | None = None,
+        security_groups: List[str] | None = None,
+        ports: List[Dict[str, Any]] | None = None,
+        volumes: List[InstanceVolume | Dict[str, Any]] | None = None,
+        network_interfaces: List[InstanceNetwork | Dict[str, Any]] | None = None,
+        options: Dict[str, Any] | None = None,
+    ) -> Instance | Dict[str, Any]:
+        """
+        Provision an instance from human-friendly names.
+
+        A guided wrapper over :meth:`create` that resolves the IDs an instance
+        needs from names you already know:
+
+        - ``layout`` from the instance type ``code``
+        - ``plan`` ID from a plan name (or pass the numeric ID directly)
+        - ``resource_pool_id`` from a pool name (or auto-selected when the group
+          has exactly one pool)
+        - ``cloud`` defaults to ``group`` (the MTN convention)
+
+        Args:
+            name: Instance name
+            type: Instance type code (e.g. ``"MTN-CS10"``)
+            group: Group name; also used as the cloud/zone unless ``cloud`` is set
+            plan: Service plan name (resolved) or numeric ID
+            resource_pool: Pool name, code, or numeric ID. If omitted, the group's
+                single pool is used; if the group has several, an error lists them.
+            cloud: Cloud/zone name; defaults to ``group``
+            availability_zone: Availability zone (e.g. ``"Lagos-AZ-1-fd1"``)
+            security_group: Security group name (default ``"default"``)
+            wait: Block until the instance is running (default True)
+            timeout: Max seconds to wait when ``wait`` is True
+            dry_run: Return the resolved config without creating anything
+            **: Remaining options pass straight through to :meth:`create`
+
+        Returns:
+            The created :class:`Instance` (running if ``wait``), or the resolved
+            config dict when ``dry_run`` is True.
+
+        Raises:
+            NotFoundError: If the group or instance type cannot be resolved
+            ValidationError: If the plan or resource pool cannot be resolved
+
+        Example:
+            instance = cloud.instances.provision(
+                name="web-01",
+                type="MTN-CS10",
+                group="MTNNG_CLOUD_AZ_1",
+                plan="G2S4",
+                resource_pool="my-project",
+            )
+        """
+        grp = self._resolve_group(group)
+        if not grp.cloud_ids:
+            raise ValidationError(f"Group '{group}' has no associated cloud.")
+        zone_id = grp.cloud_ids[0]
+        group_name = grp.name or group
+        cloud_name = cloud or group_name
+
+        from mtn_cloud.resources.instance_types import InstanceTypesResource
+
+        instance_type = InstanceTypesResource(self._http).get_by_code(type)
+        layout_id = instance_type.default_layout_id
+        if layout_id is None:
+            raise ValidationError(f"Instance type '{type}' has no available layout.")
+
+        plan_id = self._resolve_plan_id(plan, zone_id=zone_id, layout_id=layout_id, group_id=grp.id)
+        pool_code = self._resolve_provision_pool(resource_pool, grp)
+
+        if dry_run:
+            return {
+                "name": name,
+                "cloud": cloud_name,
+                "type": type,
+                "group": group_name,
+                "layout": layout_id,
+                "plan": plan_id,
+                "resource_pool_id": pool_code,
+                "availability_zone": availability_zone,
+                "security_group": security_group,
+            }
+
+        instance = self.create(
+            name=name,
+            cloud=cloud_name,
+            type=type,
+            group=group_name,
+            layout=layout_id,
+            plan=plan_id,
+            resource_pool_id=pool_code,
+            availability_zone=availability_zone,
+            security_group=security_group,
+            description=description,
+            environment=environment,
+            labels=labels,
+            tags=tags,
+            copies=copies,
+            layout_size=layout_size,
+            os_external_network_id=os_external_network_id,
+            create_user=create_user,
+            workflow_id=workflow_id,
+            shutdown_days=shutdown_days,
+            expire_days=expire_days,
+            create_backup=create_backup,
+            security_groups=security_groups,
+            ports=ports,
+            volumes=volumes,
+            network_interfaces=network_interfaces,
+            options=options,
+        )
+        if wait:
+            return self.wait_until_running(instance.id, timeout=timeout)
+        return instance
+
+    def _resolve_plan_id(
+        self,
+        plan: str | int,
+        *,
+        zone_id: int,
+        layout_id: int,
+        group_id: int,
+    ) -> int:
+        """Resolve a plan name to its ID; pass numeric IDs through unchanged."""
+        if isinstance(plan, int):
+            return plan
+        if plan.isdigit():
+            return int(plan)
+
+        plans = self.list_service_plans(zone_id=zone_id, layout_id=layout_id, group_id=group_id)
+        for candidate in plans:
+            if candidate.get("name") == plan or candidate.get("code") == plan:
+                return int(candidate["id"])
+
+        available = ", ".join(sorted(str(p.get("name")) for p in plans)) or "none"
+        raise ValidationError(
+            f"Service plan {plan!r} not found for this type/zone. Available: {available}"
+        )
+
+    def _resolve_provision_pool(self, resource_pool: str | int | None, group: Group) -> str:
+        """Resolve the resource pool code, auto-selecting the only pool if needed."""
+        if isinstance(resource_pool, int):
+            return self._normalize_resource_pool_id(resource_pool)
+        if resource_pool is not None:
+            return self.get_resource_pool(
+                resource_pool, cloud_id=group.cloud_ids[0], group_id=group.id
+            ).code
+
+        pools = self.list_resource_pools(cloud_id=group.cloud_ids[0], group_id=group.id)
+        if not pools:
+            raise ValidationError(
+                f"Group '{group.name}' has no resource pool. Create a project first."
+            )
+        if len(pools) > 1:
+            names = ", ".join(sorted(p.name or p.code for p in pools))
+            raise ValidationError(
+                f"Group '{group.name}' has multiple resource pools; "
+                f"pass resource_pool=. Available: {names}"
+            )
+        return pools[0].code
 
     def _resolve_group(self, group: str | int) -> Group:
         """

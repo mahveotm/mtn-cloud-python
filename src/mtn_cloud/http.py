@@ -69,8 +69,9 @@ class HTTPClient:
         retry_strategy = Retry(
             total=self.config.max_retries,
             backoff_factor=self.config.retry_delay,
-            status_forcelist=[500, 502, 503, 504],
+            status_forcelist=[429, 500, 502, 503, 504],
             allowed_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+            respect_retry_after_header=True,
             raise_on_status=False,
         )
 

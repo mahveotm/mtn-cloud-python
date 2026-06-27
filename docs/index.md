@@ -15,9 +15,10 @@ Use this guide in two ways:
 5. [Security Groups](./security-groups.md)
 6. [Backups](./backups.md)
 7. [Virtual Images](./virtual-images.md)
-8. [Advanced Cookbook](./advanced-cookbook.md)
-9. [API Overview](./api-overview.md)
-10. [API Reference](./api-reference/index.md)
+8. [Recipes](./recipes.md)
+9. [Advanced Cookbook](./advanced-cookbook.md)
+10. [API Overview](./api-overview.md)
+11. [API Reference](./api-reference/index.md)
 
 ## Who This Is For
 
@@ -41,6 +42,7 @@ Use this guide in two ways:
 5. Security Groups
 6. Backups
 7. Virtual Images
-8. API Overview
-9. API Reference
-10. Advanced Cookbook
+8. Recipes
+9. API Overview
+10. API Reference
+11. Advanced Cookbook
