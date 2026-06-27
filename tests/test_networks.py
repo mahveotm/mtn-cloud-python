@@ -20,13 +20,25 @@ SAMPLE_SUBNET = {
     "active": True,
 }
 
-SAMPLE_FLOATING_IP = {
-    "id": 51,
-    "externalId": "1b633f67-6a1e-4195-b1e3-45b9704e4766",
-    "cloud": {"id": 1, "name": "MTNNG_CLOUD_AZ_1", "type": "openstack"},
-    "server": {"id": 21840, "name": "test-vm"},
-    "ipStatus": "assigned",
-    "ipAddress": "10.32.23.188",
+SAMPLE_NETWORK_POOL = {
+    "id": 9,
+    "name": "sdk-pool-1",
+    "type": {"id": 1, "name": "Morpheus", "code": "morpheus"},
+    "ipCount": 51,
+    "freeCount": 50,
+    "poolEnabled": True,
+    "gateway": "10.252.69.1",
+    "ipRanges": [
+        {"id": 11, "startAddress": "10.252.69.10", "endAddress": "10.252.69.60"},
+    ],
+}
+
+SAMPLE_NETWORK_POOL_IP = {
+    "id": 100,
+    "networkPoolId": 9,
+    "ipType": "used",
+    "ipAddress": "10.252.69.10",
+    "hostname": "app-01",
 }
 
 SAMPLE_NETWORK_TYPES = {
@@ -215,42 +227,45 @@ class TestNetworksResource:
         assert network_types[0].code == "openstackNetwork"
         assert network_types[0].is_openstack is True
 
-    def test_list_floating_ips(self):
-        """Test listing floating IPs."""
+    def test_list_pools(self):
+        """Test listing network pools."""
         mock_http = MagicMock()
-        mock_http.get.return_value = {"networkFloatingIps": [SAMPLE_FLOATING_IP]}
+        mock_http.get.return_value = {"networkPools": [SAMPLE_NETWORK_POOL]}
 
         resource = NetworksResource(mock_http)
-        ips = resource.list_floating_ips(cloud_id=1, ip_status="assigned")
+        pools = resource.list_pools(phrase="sdk")
+
+        assert len(pools) == 1
+        assert pools[0].name == "sdk-pool-1"
+        assert pools[0].free_count == 50
+        assert pools[0].ip_ranges[0].start_address == "10.252.69.10"
+        call_args = mock_http.get.call_args
+        assert call_args[0][0] == "/networks/pools"
+        assert call_args[1]["params"]["phrase"] == "sdk"
+
+    def test_get_pool(self):
+        """Test getting a network pool by ID."""
+        mock_http = MagicMock()
+        mock_http.get.return_value = {"networkPool": SAMPLE_NETWORK_POOL}
+
+        resource = NetworksResource(mock_http)
+        pool = resource.get_pool(9)
+
+        assert pool.id == 9
+        assert pool.ip_count == 51
+        mock_http.get.assert_called_with("/networks/pools/9")
+
+    def test_list_pool_ips(self):
+        """Test listing IPs within a pool."""
+        mock_http = MagicMock()
+        mock_http.get.return_value = {"networkPoolIps": [SAMPLE_NETWORK_POOL_IP]}
+
+        resource = NetworksResource(mock_http)
+        ips = resource.list_pool_ips(9, hostname="app-01")
 
         assert len(ips) == 1
-        assert ips[0].ip_address == "10.32.23.188"
+        assert ips[0].ip_address == "10.252.69.10"
+        assert ips[0].hostname == "app-01"
         call_args = mock_http.get.call_args
-        assert call_args[0][0] == "/networks/floating-ips"
-        assert call_args[1]["params"]["zoneId"] == 1
-        assert call_args[1]["params"]["ipStatus"] == "assigned"
-
-    def test_allocate_floating_ip(self):
-        """Test allocating floating IP."""
-        mock_http = MagicMock()
-        mock_http.post.return_value = {"networkFloatingIp": SAMPLE_FLOATING_IP}
-
-        resource = NetworksResource(mock_http)
-        ip = resource.allocate_floating_ip(network_server_id=5, floating_ip_pool_id=1)
-
-        assert ip.id == 51
-        mock_http.post.assert_called_with(
-            "/networks/floating-ips",
-            json={"networkServerId": 5, "floatingIpPoolId": 1},
-        )
-
-    def test_release_floating_ip(self):
-        """Test releasing floating IP."""
-        mock_http = MagicMock()
-        mock_http.put.return_value = {"success": True}
-
-        resource = NetworksResource(mock_http)
-        released = resource.release_floating_ip(51)
-
-        assert released is True
-        mock_http.put.assert_called_with("/networks/floating-ips/51/release")
+        assert call_args[0][0] == "/networks/pools/9/ips"
+        assert call_args[1]["params"]["hostname"] == "app-01"

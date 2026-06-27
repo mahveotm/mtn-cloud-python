@@ -50,35 +50,79 @@ Lagos AZ3 (Lagos Mainland) is in progress. Each zone has independent power, cool
 
 Run this before creating an instance. All IDs are account-specific.
 
+Provisioning inputs are discovered from **groups, instance types, resource pools, and service plans** — all permission-safe endpoints. (The admin-level `clouds.list()` and `plans.list()` endpoints are restricted on most tenant accounts and will raise `ForbiddenError`; you do not need them.)
+
 ```python
 from mtn_cloud import MTNCloud
 
 cloud = MTNCloud(token="your-api-token")
 
-groups = cloud.groups.list()
-clouds = cloud.clouds.list_openstack()
-types = cloud.instance_types.list_os()
-plans = cloud.plans.list()
+# 1. Group — gives you the group name AND its cloud/zone IDs
+group = cloud.groups.get_by_name("MTNNG_CLOUD_AZ_1")
+cloud_id = group.cloud_ids[0]
+print("group:", group.id, group.name, "cloud_ids:", group.cloud_ids)
 
-print([(g.id, g.name) for g in groups[:5]])
-print([(c.id, c.name) for c in clouds[:5]])
-print([(t.code, t.default_layout_id) for t in types[:5]])
-print([(p.id, p.name) for p in plans[:5]])
+# 2. Instance type — each carries its own default_layout_id
+itype = cloud.instance_types.get_by_code("MTN-CS10")
+print("type:", itype.code, "layout:", itype.default_layout_id)
+
+# 3. Resource pool — where the instance is hosted (the resource_pool_id)
+for pool in cloud.instances.list_resource_pools(group="MTNNG_CLOUD_AZ_1"):
+    print("pool:", pool.code, pool.name)
+
+# 4. Service plans — available CPU/memory/storage tiers for this zone + layout
+for plan in cloud.instances.list_service_plans(
+    zone_id=cloud_id,
+    layout_id=itype.default_layout_id,
+    group_id=group.id,
+):
+    print("plan:", plan["id"], plan["name"])
 ```
 
 The `default_layout_id` on each instance type is the correct `layout` value to use for that type. Always read it from your account rather than hardcoding a value from an example.
 
+### Resource Pools (the `resource_pool_id`)
+
+A resource pool is **where your instance is hosted** — you cannot create an instance without one. List them by group name (the cloud/zone is resolved for you):
+
+```python
+# List every pool available to a group
+for pool in cloud.instances.list_resource_pools(group="MTNNG_CLOUD_AZ_1"):
+    print(pool.code, pool.name, "(default)" if pool.is_default else "")
+
+# Or fetch a single pool by name (or by its code)
+pool = cloud.instances.get_resource_pool(
+    "my-project-Marv-Osuolale",
+    group="MTNNG_CLOUD_AZ_1",
+)
+print(pool.code)   # e.g. "pool-214" — pass this as resource_pool_id
+```
+
+`pool.code` (e.g. `"pool-214"`) is the exact value `create()` expects. When passing it to `create()`, you can use the code (`"pool-214"`), the numeric ID (`214`), or its string form (`"214"`) — they are all normalized to the code internally.
+
+If you already know the cloud and group IDs, pass them explicitly to skip the group lookup:
+
+```python
+pools = cloud.instances.list_resource_pools(cloud_id=4, group_id=621)
+```
+
 ## Create an Instance
 
 ```python
+# Resolve the resource pool once, then use its code directly
+pool = cloud.instances.get_resource_pool(
+    "my-project-Marv-Osuolale",
+    group="MTNNG_CLOUD_AZ_1",
+)
+
 instance = cloud.instances.create(
     name="app-server-01",
     cloud="MTNNG_CLOUD_AZ_1",
     type="MTN-CS10",
     group="MTNNG_CLOUD_AZ_1",
     layout=327,                         # use default_layout_id from your type lookup
-    plan=6776,                          # use plan ID from your plans lookup
-    resource_pool_id="pool-214",        # from your project order
+    plan=6776,                          # use a plan ID from list_service_plans()
+    resource_pool_id=pool.code,         # e.g. "pool-214" (or pass 214 directly)
     availability_zone="Lagos-AZ-1-fd1",
     security_group="default",           # security group name from the console
 )

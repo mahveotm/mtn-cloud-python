@@ -27,7 +27,9 @@ from mtn_cloud.models.instance_type import InstanceType, InstanceTypeLayout
 from mtn_cloud.models.network import (
     Network,
     NetworkCreate,
-    NetworkFloatingIP,
+    NetworkPool,
+    NetworkPoolIp,
+    NetworkPoolRange,
     NetworkType,
     NetworkTypeInfo,
     NetworkUpdate,
@@ -37,6 +39,7 @@ from mtn_cloud.models.network import (
     Subnet,
 )
 from mtn_cloud.models.plan import ServicePlan
+from mtn_cloud.models.resource_pool import ResourcePool
 from mtn_cloud.models.security_group import (
     SecurityGroup,
     SecurityGroupCreate,
@@ -78,7 +81,9 @@ __all__ = [
     "ResourceReference",
     "ResourcePermission",
     "Subnet",
-    "NetworkFloatingIP",
+    "NetworkPool",
+    "NetworkPoolIp",
+    "NetworkPoolRange",
     "NetworkTypeInfo",
     "NetworkCreate",
     "NetworkUpdate",
@@ -115,6 +120,8 @@ __all__ = [
     "SecurityGroupUpdate",
     "SecurityGroupRuleCreate",
     "SecurityGroupRuleUpdate",
+    # Resource Pool
+    "ResourcePool",
     # Snapshot
     "Snapshot",
     "SnapshotCreate",

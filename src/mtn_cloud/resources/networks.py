@@ -8,7 +8,8 @@ from mtn_cloud.exceptions import NotFoundError
 from mtn_cloud.models.network import (
     Network,
     NetworkCreate,
-    NetworkFloatingIP,
+    NetworkPool,
+    NetworkPoolIp,
     NetworkTypeInfo,
     NetworkUpdate,
     Subnet,
@@ -319,64 +320,81 @@ class NetworksResource(BaseResource[Network]):
         item = response.get("networkType", response)
         return NetworkTypeInfo.model_validate(item)
 
-    def list_floating_ips(
+    def list_pools(
         self,
-        *,
+        max_results: int | None = None,
+        offset: int = 0,
         phrase: str | None = None,
-        ip_address: str | None = None,
-        ip_status: str | None = None,
-        cloud_id: int | None = None,
-        server_id: int | None = None,
-    ) -> List[NetworkFloatingIP]:
+    ) -> List[NetworkPool]:
         """
-        List floating IPs.
+        List network IP pools.
 
-        This endpoint is primarily useful for OpenStack-based MTN Cloud zones.
+        Pools are managed ranges of addresses used for static IP assignment.
+
+        Args:
+            max_results: Maximum number of results
+            offset: Pagination offset
+            phrase: Search phrase
+
+        Returns:
+            List of network pools
         """
         params: dict[str, Any] = {}
+        if max_results is not None:
+            params["max"] = max_results
+        if offset:
+            params["offset"] = offset
+        if phrase:
+            params["phrase"] = phrase
+
+        response = self._http.get(f"{self._path}/pools", params=params or None)
+        return [NetworkPool.model_validate(item) for item in response.get("networkPools", [])]
+
+    def get_pool(self, pool_id: int) -> NetworkPool:
+        """
+        Get a network pool by ID (includes its IP ranges).
+
+        Args:
+            pool_id: Network pool ID
+
+        Returns:
+            Network pool
+        """
+        response = self._http.get(f"{self._path}/pools/{pool_id}")
+        item = response.get("networkPool", response)
+        return NetworkPool.model_validate(item)
+
+    def list_pool_ips(
+        self,
+        pool_id: int,
+        *,
+        max_results: int | None = None,
+        phrase: str | None = None,
+        ip_address: str | None = None,
+        hostname: str | None = None,
+    ) -> List[NetworkPoolIp]:
+        """
+        List the individual IP addresses tracked within a pool.
+
+        Args:
+            pool_id: Network pool ID
+            max_results: Maximum number of results
+            phrase: Partial match on ipAddress or hostname
+            ip_address: Exact match on IP address
+            hostname: Exact match on hostname
+
+        Returns:
+            List of pool IP records
+        """
+        params: dict[str, Any] = {}
+        if max_results is not None:
+            params["max"] = max_results
         if phrase:
             params["phrase"] = phrase
         if ip_address:
             params["ipAddress"] = ip_address
-        if ip_status:
-            params["ipStatus"] = ip_status
-        if cloud_id:
-            params["zoneId"] = cloud_id
-        if server_id:
-            params["serverId"] = server_id
+        if hostname:
+            params["hostname"] = hostname
 
-        response = self._http.get(f"{self._path}/floating-ips", params=params)
-        items = response.get("networkFloatingIps", [])
-        return [NetworkFloatingIP.model_validate(item) for item in items]
-
-    def get_floating_ip(self, floating_ip_id: int) -> NetworkFloatingIP:
-        """Get a floating IP by ID."""
-        response = self._http.get(f"{self._path}/floating-ips/{floating_ip_id}")
-        item = response.get("networkFloatingIp", response)
-        return NetworkFloatingIP.model_validate(item)
-
-    def allocate_floating_ip(
-        self,
-        *,
-        network_server_id: int,
-        floating_ip_pool_id: int,
-    ) -> NetworkFloatingIP:
-        """
-        Allocate a floating IP.
-
-        Args:
-            network_server_id: Network server ID
-            floating_ip_pool_id: Floating IP pool ID
-        """
-        payload = {
-            "networkServerId": network_server_id,
-            "floatingIpPoolId": floating_ip_pool_id,
-        }
-        response = self._http.post(f"{self._path}/floating-ips", json=payload)
-        item = response.get("networkFloatingIp", response)
-        return NetworkFloatingIP.model_validate(item)
-
-    def release_floating_ip(self, floating_ip_id: int) -> bool:
-        """Release a floating IP by ID."""
-        self._http.put(f"{self._path}/floating-ips/{floating_ip_id}/release")
-        return True
+        response = self._http.get(f"{self._path}/pools/{pool_id}/ips", params=params or None)
+        return [NetworkPoolIp.model_validate(item) for item in response.get("networkPoolIps", [])]

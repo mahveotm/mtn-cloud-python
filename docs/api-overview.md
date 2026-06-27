@@ -42,7 +42,10 @@ cloud.instance_types.get_by_code("MTN-CS10")
 ## Common Write Operations
 
 ```python
-cloud.instances.create(...)
+# Discover the resource pool an instance will be hosted in
+pool = cloud.instances.get_resource_pool("my-project", group="MTNNG_CLOUD_AZ_1")
+
+cloud.instances.create(..., resource_pool_id=pool.code)
 cloud.instances.update(instance_id=123, name="new-name")
 cloud.instances.delete(123)
 
@@ -93,6 +96,7 @@ Resource methods return typed Pydantic models, for example:
 - `ArchiveFile`
 - `SecurityGroup`, `SecurityGroupRule`
 - `Snapshot`
+- `ResourcePool`
 - `Backup`, `BackupJob`, `BackupResult`
 - `VirtualImage`
 

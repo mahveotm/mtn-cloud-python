@@ -88,36 +88,32 @@
 - Returns: `NetworkTypeInfo`
 - Raises: common API exceptions
 
-### `list_floating_ips(*, phrase=None, ip_address=None, ip_status=None, cloud_id=None, server_id=None) -> list[NetworkFloatingIP]`
+### `list_pools(max_results=None, offset=0, phrase=None) -> list[NetworkPool]`
 
-- Endpoint: `GET /api/networks/floating-ips`
+- Endpoint: `GET /api/networks/pools`
 - Parameters:
+    - `max_results`: maps to query `max`
+    - `offset`: pagination offset
     - `phrase`: search phrase
-    - `ip_address`: exact IP match
-    - `ip_status`: provider status value
-    - `cloud_id`: mapped to `zoneId`
-    - `server_id`: mapped to `serverId`
-- Returns: `list[NetworkFloatingIP]`
+- Returns: `list[NetworkPool]` (each includes its `ip_ranges`, `ip_count`, `free_count`)
 - Raises: common API exceptions
 
-### `get_floating_ip(floating_ip_id: int) -> NetworkFloatingIP`
+### `get_pool(pool_id: int) -> NetworkPool`
 
-- Endpoint: `GET /api/networks/floating-ips/{floating_ip_id}`
-- Returns: `NetworkFloatingIP`
+- Endpoint: `GET /api/networks/pools/{pool_id}`
+- Returns: `NetworkPool`
 - Raises: common API exceptions
 
-### `allocate_floating_ip(*, network_server_id: int, floating_ip_pool_id: int) -> NetworkFloatingIP`
+### `list_pool_ips(pool_id: int, *, max_results=None, phrase=None, ip_address=None, hostname=None) -> list[NetworkPoolIp]`
 
-- Endpoint: `POST /api/networks/floating-ips`
+- Endpoint: `GET /api/networks/pools/{pool_id}/ips`
 - Parameters:
-    - `network_server_id`: backend network server ID
-    - `floating_ip_pool_id`: floating IP pool ID
-- Returns: `NetworkFloatingIP`
+    - `max_results`: maps to query `max`
+    - `phrase`: partial match on `ipAddress` or `hostname`
+    - `ip_address`: exact IP match
+    - `hostname`: exact hostname match
+- Returns: `list[NetworkPoolIp]`
 - Raises: common API exceptions
 
-### `release_floating_ip(floating_ip_id: int) -> bool`
-
-- Endpoint: `PUT /api/networks/floating-ips/{floating_ip_id}/release`
-- Returns: `True`
-- Raises: common API exceptions
+> **Note:** Standalone floating-IP endpoints (`/api/networks/floating-ips`) are restricted (HTTP 403) on MTN Cloud tenant accounts and are not exposed by the SDK. Assign external/public connectivity at provisioning time via the instance's `os_external_network_id` instead.
 

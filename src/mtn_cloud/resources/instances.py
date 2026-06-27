@@ -6,6 +6,7 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, List
 
 from mtn_cloud.exceptions import NotFoundError, TimeoutError
+from mtn_cloud.models.group import Group
 from mtn_cloud.models.instance import (
     Instance,
     InstanceCreate,
@@ -13,6 +14,7 @@ from mtn_cloud.models.instance import (
     InstanceUpdate,
     InstanceVolume,
 )
+from mtn_cloud.models.resource_pool import ResourcePool
 from mtn_cloud.models.snapshot import Snapshot, SnapshotCreate
 from mtn_cloud.resources.base import BaseResource
 
@@ -171,7 +173,7 @@ class InstancesResource(BaseResource[Instance]):
         group: str,
         layout: int,
         plan: int,
-        resource_pool_id: str,
+        resource_pool_id: str | int,
         description: str | None = None,
         environment: str | None = None,
         labels: List[str] | None = None,
@@ -206,7 +208,8 @@ class InstancesResource(BaseResource[Instance]):
             group: Group name (e.g., 'MTNNG_CLOUD_AZ_1') - will be resolved to ID automatically
             layout: Layout ID (e.g., 327)
             plan: Service plan ID (e.g., 6923)
-            resource_pool_id: Resource pool ID (e.g., 'pool-214')
+            resource_pool_id: Resource pool, as the code ('pool-214') or numeric ID (214).
+                Discover it with `list_resource_pools()` or `get_resource_pool()`.
             description: Instance description
             environment: Environment code
             labels: Labels (keywords) list
@@ -253,6 +256,9 @@ class InstancesResource(BaseResource[Instance]):
         """
         # Resolve group name to group ID
         group_id = self._resolve_group_id(group)
+
+        # Normalize resource pool reference (accept "pool-214", 214, or "214")
+        resource_pool_id = self._normalize_resource_pool_id(resource_pool_id)
 
         # Convert volume dicts to models
         converted_volumes: list[InstanceVolume] = []
@@ -305,6 +311,27 @@ class InstancesResource(BaseResource[Instance]):
         payload = create_model.to_api_payload()
         return self._create(payload)
 
+    def _resolve_group(self, group: str | int) -> Group:
+        """
+        Resolve a group name or ID to a full Group object.
+
+        Args:
+            group: Group name (e.g., 'MTNNG_CLOUD_AZ_1') or numeric ID
+
+        Returns:
+            Group object (includes associated cloud/zone IDs)
+
+        Raises:
+            NotFoundError: If group not found
+        """
+        # Import here to avoid circular imports
+        from mtn_cloud.resources.groups import GroupsResource
+
+        groups_resource = GroupsResource(self._http)
+        if isinstance(group, int):
+            return groups_resource.get(group)
+        return groups_resource.get_by_name(group)
+
     def _resolve_group_id(self, group_name: str) -> int:
         """
         Resolve a group name to its ID.
@@ -318,12 +345,26 @@ class InstancesResource(BaseResource[Instance]):
         Raises:
             NotFoundError: If group not found
         """
-        # Import here to avoid circular imports
-        from mtn_cloud.resources.groups import GroupsResource
+        return self._resolve_group(group_name).id
 
-        groups_resource = GroupsResource(self._http)
-        group = groups_resource.get_by_name(group_name)
-        return group.id
+    @staticmethod
+    def _normalize_resource_pool_id(value: str | int) -> str:
+        """
+        Normalize a resource pool reference to its code form.
+
+        Accepts the numeric pool ID (``213`` or ``"213"``) or the full
+        code (``"pool-213"``) and always returns the code form.
+
+        Args:
+            value: Resource pool ID or code
+
+        Returns:
+            Pool code (e.g. ``"pool-213"``)
+        """
+        text = str(value).strip()
+        if text.isdigit():
+            return f"pool-{text}"
+        return text
 
     def update(
         self,
@@ -647,3 +688,155 @@ class InstancesResource(BaseResource[Instance]):
         path = f"{self._path}/{instance_id}/snapshots/{snapshot_id}"
         self._http.delete(path)
         return True
+
+    # ── Provisioning discovery ────────────────────────────────────────────────
+
+    def list_service_plans(
+        self,
+        zone_id: int | None = None,
+        layout_id: int | None = None,
+        group_id: int | None = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        List service plans available for provisioning.
+
+        Unlike the admin-level plans endpoint, this is scoped to the
+        provisioning context so it respects account permissions.
+
+        Args:
+            zone_id: Cloud/zone ID to filter plans (use group.cloud_ids[0])
+            layout_id: Layout ID to filter compatible plans
+            group_id: Group/site ID to filter plans
+
+        Returns:
+            List of plan dicts with id, name, maxCpu, maxMemory, maxStorage
+        """
+        params: Dict[str, Any] = {}
+        if zone_id is not None:
+            params["zoneId"] = zone_id
+        if layout_id is not None:
+            params["layoutId"] = layout_id
+        if group_id is not None:
+            params["siteId"] = group_id
+
+        response = self._http.get("/instances/service-plans", params=params or None)
+        plans: List[Dict[str, Any]] = response.get("plans", [])
+        return plans
+
+    def list_resource_pools(
+        self,
+        group: str | int | None = None,
+        *,
+        cloud_id: int | None = None,
+        group_id: int | None = None,
+        provision_type_code: str = "openstack",
+    ) -> List[ResourcePool]:
+        """
+        List resource pools available for provisioning.
+
+        A resource pool is where an instance is hosted; you must know your
+        resource pool before creating an instance. The pool's ``code``
+        (e.g. ``"pool-214"``) is what you pass as ``resource_pool_id`` to
+        :meth:`create`.
+
+        The simplest call passes a group name (or ID) and resolves the
+        cloud/zone automatically::
+
+            pools = cloud.instances.list_resource_pools(group="MTNNG_CLOUD_AZ_1")
+
+        For full control (or to skip the group lookup), pass ``cloud_id`` and
+        ``group_id`` explicitly.
+
+        Args:
+            group: Group name or ID. When given, ``cloud_id`` and ``group_id``
+                are resolved from it automatically.
+            cloud_id: Cloud/zone ID. Required if ``group`` is not given.
+            group_id: Group/site ID. Required if ``group`` is not given.
+            provision_type_code: Provisioning type (default ``"openstack"``)
+
+        Returns:
+            List of resource pools
+
+        Raises:
+            ValueError: If neither ``group`` nor both ``cloud_id``/``group_id``
+                are provided, or the group has no associated cloud.
+
+        Example:
+            # Simplest: by group name
+            for pool in cloud.instances.list_resource_pools(group="MTNNG_CLOUD_AZ_1"):
+                print(f"{pool.code}: {pool.name}")
+
+            # Explicit IDs (advanced)
+            pools = cloud.instances.list_resource_pools(cloud_id=4, group_id=621)
+        """
+        if group is not None:
+            grp = self._resolve_group(group)
+            group_id = grp.id
+            if cloud_id is None:
+                if not grp.cloud_ids:
+                    raise ValueError(
+                        f"Group '{group}' has no associated cloud; cannot list resource pools."
+                    )
+                cloud_id = grp.cloud_ids[0]
+
+        if cloud_id is None or group_id is None:
+            raise ValueError("Provide either `group`, or both `cloud_id` and `group_id`.")
+
+        params: Dict[str, Any] = {
+            "cloudId": cloud_id,
+            "groupId": group_id,
+        }
+        if provision_type_code:
+            params["provisionTypeCode"] = provision_type_code
+
+        response = self._http.get("/options/zonePools", params=params)
+        pools: List[ResourcePool] = []
+        for item in response.get("data", []):
+            # Skip group header rows (no id, isGroup=True)
+            if item.get("isGroup") or "id" not in item:
+                continue
+            pools.append(ResourcePool.model_validate(item))
+        return pools
+
+    def get_resource_pool(
+        self,
+        name: str,
+        *,
+        group: str | int | None = None,
+        cloud_id: int | None = None,
+        group_id: int | None = None,
+        provision_type_code: str = "openstack",
+    ) -> ResourcePool:
+        """
+        Get a single resource pool by name or code.
+
+        Args:
+            name: Resource pool display name or code (e.g. ``"pool-214"``)
+            group: Group name or ID (resolves cloud/zone automatically)
+            cloud_id: Cloud/zone ID. Required if ``group`` is not given.
+            group_id: Group/site ID. Required if ``group`` is not given.
+            provision_type_code: Provisioning type (default ``"openstack"``)
+
+        Returns:
+            Matching resource pool
+
+        Raises:
+            NotFoundError: If no pool matches ``name``
+
+        Example:
+            pool = cloud.instances.get_resource_pool(
+                "workingresourcepool-Marv-Osuolale",
+                group="MTNNG_CLOUD_AZ_1",
+            )
+            cloud.instances.create(..., resource_pool_id=pool.code)
+        """
+        pools = self.list_resource_pools(
+            group=group,
+            cloud_id=cloud_id,
+            group_id=group_id,
+            provision_type_code=provision_type_code,
+        )
+        for pool in pools:
+            if pool.name == name or pool.code == name:
+                return pool
+        raise NotFoundError(resource_type="ResourcePool", resource_id=name)

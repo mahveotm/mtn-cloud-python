@@ -174,17 +174,51 @@ class Subnet(Resource):
         return None
 
 
-class NetworkFloatingIP(Resource):
-    """Floating IP attached to a network service (OpenStack-focused)."""
+class NetworkPoolRange(BaseModel):
+    """A contiguous IP range within a network pool."""
 
+    id: int
+    start_address: str | None = Field(default=None, alias="startAddress")
+    end_address: str | None = Field(default=None, alias="endAddress")
     external_id: str | None = Field(default=None, alias="externalId")
-    cloud: ResourceReference | None = Field(default=None)
-    server: ResourceReference | None = Field(default=None)
-    ip_status: str = Field(alias="ipStatus")
-    ip_address: str = Field(alias="ipAddress")
-    ip_range: str | None = Field(default=None, alias="ipRange")
-    ptr_id: str | None = Field(default=None, alias="ptrId")
-    network_domain: ResourceReference | None = Field(default=None, alias="networkDomain")
+    description: str | None = Field(default=None)
+
+
+class NetworkPool(Resource):
+    """
+    A network IP pool — a managed range of addresses for static assignment.
+
+    Example:
+        for pool in cloud.networks.list_pools():
+            print(f"{pool.name}: {pool.free_count}/{pool.ip_count} free")
+    """
+
+    display_name: str | None = Field(default=None, alias="displayName")
+    description: str | None = Field(default=None)
+    type: ResourceReference | None = Field(default=None, description="Pool type info")
+    account: ResourceReference | None = Field(default=None)
+    gateway: str | None = Field(default=None)
+    netmask: str | None = Field(default=None)
+    subnet_address: str | None = Field(default=None, alias="subnetAddress")
+    dns_domain: str | None = Field(default=None, alias="dnsDomain")
+    ip_count: int | None = Field(default=None, alias="ipCount")
+    free_count: int | None = Field(default=None, alias="freeCount")
+    pool_enabled: bool | None = Field(default=None, alias="poolEnabled")
+    ip_ranges: list[NetworkPoolRange] = Field(default_factory=list, alias="ipRanges")
+
+
+class NetworkPoolIp(Resource):
+    """An individual IP address tracked within a network pool."""
+
+    network_pool_id: int | None = Field(default=None, alias="networkPoolId")
+    ip_type: str | None = Field(default=None, alias="ipType")
+    ip_address: str | None = Field(default=None, alias="ipAddress")
+    gateway_address: str | None = Field(default=None, alias="gatewayAddress")
+    interface_name: str | None = Field(default=None, alias="interfaceName")
+    description: str | None = Field(default=None)
+    active: bool | None = Field(default=None)
+    fqdn: str | None = Field(default=None)
+    hostname: str | None = Field(default=None)
 
 
 class NetworkTypeInfo(Resource):

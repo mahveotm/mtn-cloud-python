@@ -83,23 +83,45 @@ User Icon (top-right) -> User Settings -> API Access.
 
 ### 1. Discover Reference Data
 
-Use these lookups before provisioning so your scripts stay deterministic.
+Use these lookups before provisioning so your scripts stay deterministic. They all use permission-safe endpoints (the admin-level `clouds`/`plans` endpoints are restricted on most tenant accounts — you don't need them).
 
 ```python
-# Groups (sites)
-groups = cloud.groups.list()
-for group in groups[:5]:
-    print(group.id, group.name)
+# Groups (sites) — also carry the cloud/zone IDs you need
+group = cloud.groups.get_by_name("MTNNG_CLOUD_AZ_1")
+print(group.id, group.name, group.cloud_ids)
 
-# Instance types
-types = cloud.instance_types.list_os()
-for t in types[:5]:
-    print(t.code, t.name, t.default_layout_id)
+# Instance types — each carries its own default_layout_id
+itype = cloud.instance_types.get_by_code("MTN-CS10")
+print(itype.code, itype.default_layout_id)
+
+# Resource pools — where the instance is hosted (the resource_pool_id)
+for pool in cloud.instances.list_resource_pools(group="MTNNG_CLOUD_AZ_1"):
+    print(pool.code, pool.name)
+
+# Service plans — CPU/memory/storage tiers for this zone + layout
+for plan in cloud.instances.list_service_plans(
+    zone_id=group.cloud_ids[0],
+    layout_id=itype.default_layout_id,
+    group_id=group.id,
+):
+    print(plan["id"], plan["name"])
+```
+
+A **resource pool is required** to create an instance — it's where the VM is hosted. Discover it by group name (the cloud/zone is resolved for you), or fetch one directly by name:
+
+```python
+pool = cloud.instances.get_resource_pool(
+    "my-project-name",
+    group="MTNNG_CLOUD_AZ_1",
+)
+print(pool.code)   # e.g. "pool-214" — pass this as resource_pool_id
 ```
 
 ### 2. Create an Instance
 
 ```python
+pool = cloud.instances.get_resource_pool("my-project-name", group="MTNNG_CLOUD_AZ_1")
+
 instance = cloud.instances.create(
     name="my-server",
     cloud="MTNNG_CLOUD_AZ_1",
@@ -107,7 +129,7 @@ instance = cloud.instances.create(
     group="MTNNG_CLOUD_AZ_1",
     layout=327,
     plan=6776,
-    resource_pool_id="pool-214",
+    resource_pool_id=pool.code,   # "pool-214" — or pass the numeric ID 214
     labels=["production", "web"],
 )
 
