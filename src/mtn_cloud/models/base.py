@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
 
 
 class BaseModel(PydanticBaseModel):
@@ -27,6 +27,12 @@ class BaseModel(PydanticBaseModel):
         extra="ignore",
         from_attributes=True,
     )
+
+    @field_validator("labels", mode="before", check_fields=False)
+    @classmethod
+    def _coerce_null_labels(cls, value: Any) -> Any:
+        """Treat a null ``labels`` field from the API as an empty list."""
+        return [] if value is None else value
 
 
 class Resource(BaseModel):

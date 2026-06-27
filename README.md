@@ -155,27 +155,32 @@ cloud.instances.delete(123, force=True, preserve_volumes=True)
 ### 4. Work with Networks
 
 ```python
+group = cloud.groups.get_by_name("MTNNG_CLOUD_AZ_1")
+
 # List networks
-networks = cloud.networks.list(cloud_id=1)
+networks = cloud.networks.list(cloud_id=group.cloud_ids[0])
 for n in networks[:5]:
     print(n.id, n.name, n.cidr)
 
-# Create an OpenStack-focused network
-network_types = cloud.networks.list_types(openstack_only=True)
+# Create an OpenStack network (needs an OpenStack type + a resource pool)
+net_type = next(
+    t for t in cloud.networks.list_types(openstack_only=True)
+    if t.code == "openstackPrivate"
+)
+pool = cloud.instances.get_resource_pool("my-project", group=group.name)
+
 new_network = cloud.networks.create(
     name="mtn-prod-net",
-    cloud_id=1,
-    group_id=621,
-    type_id=network_types[0].id,
+    cloud_id=group.cloud_ids[0],
+    group_id=group.id,
+    type_id=net_type.id,
+    resource_pool_id=pool.id,
     cidr="10.42.10.0/24",
     gateway="10.42.10.1",
     dns_primary="8.8.8.8",
-    visibility="private",
-    dhcp_server=True,
 )
 
-# Update and list subnets
-cloud.networks.update(new_network.id, description="Production network")
+# Inspect subnets
 subnets = cloud.networks.list_subnets(new_network.id)
 print(f"Subnets: {len(subnets)}")
 ```

@@ -32,7 +32,7 @@
 - Returns: `list[Network]`
 - Raises: common API exceptions
 
-### `create(name: str, *, cloud_id: int, group_id: int, type_id=None, display_name=None, labels=None, description=None, cidr=None, gateway=None, dns_primary=None, dns_secondary=None, vlan_id=None, switch_id=None, pool_id=None, allow_static_override=None, assign_public_ip=None, active=None, dhcp_server=None, network_domain_id=None, search_domains=None, network_proxy_id=None, appliance_url_proxy_bypass=None, no_proxy=None, visibility=None, tenant_ids=None, resource_permission_all=None, resource_permission_site_ids=None) -> Network`
+### `create(name: str, *, cloud_id: int, group_id: int, type_id=None, resource_pool_id=None, display_name=None, labels=None, description=None, cidr=None, gateway=None, dns_primary=None, dns_secondary=None, vlan_id=None, switch_id=None, pool_id=None, allow_static_override=None, assign_public_ip=None, active=None, dhcp_server=None, network_domain_id=None, search_domains=None, network_proxy_id=None, appliance_url_proxy_bypass=None, no_proxy=None, visibility=None, tenant_ids=None, resource_permission_all=None, resource_permission_site_ids=None) -> Network`
 
 - Endpoint: `POST /api/networks`
 - Parameters:
@@ -40,8 +40,11 @@
         - `name`: network name
         - `cloud_id`: cloud/zone ID
         - `group_id`: group/site ID
+    - Required for OpenStack networks (e.g. `openstackPrivate`):
+        - `type_id`: an OpenStack network type ID from `list_types(openstack_only=True)`
+        - `resource_pool_id`: numeric resource pool ID (sent as `zonePool`); get it from `instances.get_resource_pool(...).id`
     - Common optional network config:
-        - `type_id`, `display_name`, `labels`, `description`, `cidr`, `gateway`
+        - `display_name`, `labels`, `description`, `cidr`, `gateway`
         - `dns_primary`, `dns_secondary`, `vlan_id`, `switch_id`, `pool_id`
         - `allow_static_override`, `assign_public_ip`, `active`, `dhcp_server`
         - `network_domain_id`, `search_domains`, `network_proxy_id`
