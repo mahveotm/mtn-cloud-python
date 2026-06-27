@@ -97,7 +97,6 @@ class MTNCloud:
             verify_ssl: Verify SSL certificates
             config: Full configuration object (overrides other args)
         """
-        # Build config from arguments or use provided config
         if config:
             self._config = config
         else:
@@ -118,10 +117,8 @@ class MTNCloud:
 
             self._config = MTNCloudConfig(**config_kwargs)
 
-        # Initialize HTTP client
         self._http = HTTPClient(self._config)
 
-        # Initialize resource managers
         self._instances: InstancesResource | None = None
         self._instance_types: InstanceTypesResource | None = None
         self._networks: NetworksResource | None = None

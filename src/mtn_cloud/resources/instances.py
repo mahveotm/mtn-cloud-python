@@ -180,12 +180,12 @@ class InstancesResource(BaseResource[Instance]):
         tags: Dict[str, str] | None = None,
         copies: int = 1,
         layout_size: int = 1,
-        # MTN Cloud config options
+        # MTN Cloud provisioning options
         availability_zone: str | None = None,
         security_group: str = "default",
         os_external_network_id: str | None = None,
         create_user: bool = True,
-        # Automation options
+        # Provisioning automation
         workflow_id: int | None = None,
         shutdown_days: int | None = None,
         expire_days: int | None = None,
@@ -254,13 +254,9 @@ class InstancesResource(BaseResource[Instance]):
                 ],
             )
         """
-        # Resolve group name to group ID
         group_id = self._resolve_group_id(group)
-
-        # Normalize resource pool reference (accept "pool-214", 214, or "214")
         resource_pool_id = self._normalize_resource_pool_id(resource_pool_id)
 
-        # Convert volume dicts to models
         converted_volumes: list[InstanceVolume] = []
         if volumes is not None:
             for v in volumes:
@@ -269,7 +265,6 @@ class InstancesResource(BaseResource[Instance]):
                 else:
                     converted_volumes.append(v)
 
-        # Convert network dicts to models
         converted_network_interfaces: list[InstanceNetwork] = []
         if network_interfaces is not None:
             for n in network_interfaces:
@@ -278,7 +273,6 @@ class InstancesResource(BaseResource[Instance]):
                 else:
                     converted_network_interfaces.append(n)
 
-        # Build create model for MTN Cloud
         create_model = InstanceCreate(
             name=name,
             cloud=cloud,
@@ -324,7 +318,7 @@ class InstancesResource(BaseResource[Instance]):
         Raises:
             NotFoundError: If group not found
         """
-        # Import here to avoid circular imports
+        # Local import avoids a module-level resource dependency cycle.
         from mtn_cloud.resources.groups import GroupsResource
 
         groups_resource = GroupsResource(self._http)
@@ -418,7 +412,7 @@ class InstancesResource(BaseResource[Instance]):
 
         return self._delete(instance_id, params=params)
 
-    # Instance Actions
+    # Instance actions
     def start(self, instance_id: int) -> Instance:
         """
         Start an instance.
@@ -613,7 +607,7 @@ class InstancesResource(BaseResource[Instance]):
         result: List[Dict[str, Any]] = response.get("processes", [])
         return result
 
-    # ── Snapshot management ──────────────────────────────────────────────────
+    # Snapshot management
 
     def list_snapshots(self, instance_id: int) -> List[Snapshot]:
         """
@@ -689,7 +683,7 @@ class InstancesResource(BaseResource[Instance]):
         self._http.delete(path)
         return True
 
-    # ── Provisioning discovery ────────────────────────────────────────────────
+    # Provisioning discovery
 
     def list_service_plans(
         self,
@@ -792,7 +786,7 @@ class InstancesResource(BaseResource[Instance]):
         response = self._http.get("/options/zonePools", params=params)
         pools: List[ResourcePool] = []
         for item in response.get("data", []):
-            # Skip group header rows (no id, isGroup=True)
+            # The options endpoint may include non-selectable group headers.
             if item.get("isGroup") or "id" not in item:
                 continue
             pools.append(ResourcePool.model_validate(item))

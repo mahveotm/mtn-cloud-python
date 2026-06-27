@@ -21,11 +21,11 @@ class BaseModel(PydanticBaseModel):
     """
 
     model_config = ConfigDict(
-        populate_by_name=True,  # Allow both camelCase and snake_case
+        populate_by_name=True,
         str_strip_whitespace=True,
         use_enum_values=True,
-        extra="ignore",  # Ignore unknown fields from API
-        from_attributes=True,  # Allow creating from ORM objects
+        extra="ignore",
+        from_attributes=True,
     )
 
 
@@ -39,7 +39,6 @@ class Resource(BaseModel):
     id: int = Field(..., description="Unique resource ID")
     name: str | None = Field(default=None, description="Resource name")
 
-    # Timestamps (optional as not all resources have these)
     date_created: datetime | None = Field(
         default=None,
         alias="dateCreated",
@@ -72,13 +71,11 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
     items: list[T] = Field(default_factory=list, description="List of items")
 
-    # Pagination metadata
     meta: dict[str, Any] | None = Field(
         default=None,
         description="Response metadata",
     )
 
-    # Pagination info (various field names used by API)
     offset: int = Field(default=0, description="Result offset")
     max: int = Field(default=25, description="Maximum results per page")
     size: int | None = Field(default=None, description="Total number of results")

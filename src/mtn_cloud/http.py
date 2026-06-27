@@ -52,7 +52,6 @@ class HTTPClient:
         self._session: requests.Session | None = None
         self._token: str | None = None
 
-        # Initialize token from config
         if config.token:
             self._token = config.token
 
@@ -67,7 +66,6 @@ class HTTPClient:
         """Create a configured requests session with retry logic."""
         session = requests.Session()
 
-        # Configure retry strategy
         retry_strategy = Retry(
             total=self.config.max_retries,
             backoff_factor=self.config.retry_delay,
@@ -80,7 +78,6 @@ class HTTPClient:
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 
-        # Set default headers
         session.headers.update(
             {
                 "Accept": "application/json",
@@ -88,7 +85,6 @@ class HTTPClient:
             }
         )
 
-        # SSL verification
         session.verify = self.config.verify_ssl
 
         return session
@@ -254,10 +250,8 @@ class HTTPClient:
         Raises:
             Appropriate MTNCloudError subclass based on status code
         """
-        # Extract request ID if available
         request_id = response.headers.get("X-Request-Id")
 
-        # Parse response body
         try:
             body = response.json() if response.text else {}
         except ValueError:
@@ -267,14 +261,10 @@ class HTTPClient:
             logger.debug(f"Response: {response.status_code}")
             logger.debug(f"Body: {body}")
 
-        # Success
         if 200 <= response.status_code < 300:
             return body
 
-        # Extract error message
         error_message = self._extract_error_message(body)
-
-        # Map status codes to exceptions
         status_code = response.status_code
 
         if status_code == 400:
@@ -344,7 +334,6 @@ class HTTPClient:
                 request_id=request_id,
             )
 
-        # Generic error for other status codes
         raise MTNCloudError(
             message=error_message,
             status_code=status_code,
@@ -354,12 +343,10 @@ class HTTPClient:
 
     def _extract_error_message(self, body: dict[str, Any]) -> str:
         """Extract human-readable error message from response body."""
-        # Try common error message fields
         for field in ["message", "msg", "error", "error_description"]:
             if field in body and body[field]:
                 return str(body[field])
 
-        # Check for nested errors
         if "errors" in body and isinstance(body["errors"], list):
             messages = [e.get("message", str(e)) for e in body["errors"] if isinstance(e, dict)]
             if messages:

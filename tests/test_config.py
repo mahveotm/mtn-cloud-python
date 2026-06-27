@@ -1,6 +1,4 @@
-"""
-Tests for configuration.
-"""
+"""Tests for configuration."""
 
 import os
 from unittest.mock import patch
@@ -32,17 +30,32 @@ class TestMTNCloudConfig:
         for key in keys:
             monkeypatch.delenv(key, raising=False)
 
-    def test_default_values(self):
-        """Test default configuration values."""
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            ("url", "https://console.cloud.mtn.ng"),
+            ("timeout", 30.0),
+            ("max_retries", 3),
+            ("verify_ssl", True),
+        ],
+    )
+    def test_default_value(self, field, expected):
+        """Use documented default values."""
         config = MTNCloudConfig()
 
-        assert config.url == "https://console.cloud.mtn.ng"
-        assert config.timeout == 30.0
-        assert config.max_retries == 3
-        assert config.verify_ssl is True
+        assert getattr(config, field) == expected
 
-    def test_explicit_values(self):
-        """Test explicit configuration values."""
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            ("token", "my-token"),
+            ("url", "https://custom.example.com"),
+            ("timeout", 60),
+            ("max_retries", 5),
+        ],
+    )
+    def test_explicit_value(self, field, expected):
+        """Use explicit constructor values."""
         config = MTNCloudConfig(
             token="my-token",
             url="https://custom.example.com",
@@ -50,10 +63,7 @@ class TestMTNCloudConfig:
             max_retries=5,
         )
 
-        assert config.token == "my-token"
-        assert config.url == "https://custom.example.com"
-        assert config.timeout == 60
-        assert config.max_retries == 5
+        assert getattr(config, field) == expected
 
     def test_url_trailing_slash_removed(self):
         """Test that trailing slash is removed from URL."""
@@ -65,35 +75,33 @@ class TestMTNCloudConfig:
         config = MTNCloudConfig(url="https://example.com")
         assert config.api_url == "https://example.com/api"
 
-    def test_has_credentials_with_token(self):
-        """Test has_credentials with token."""
-        config = MTNCloudConfig(token="test-token")
-        assert config.has_credentials is True
+    @pytest.mark.parametrize(
+        ("kwargs", "expected"),
+        [
+            ({"token": "test-token"}, True),
+            ({"username": "user", "password": "pass"}, True),
+            ({}, False),
+        ],
+    )
+    def test_has_credentials(self, kwargs, expected):
+        """Report whether usable credentials are configured."""
+        config = MTNCloudConfig(**kwargs)
 
-    def test_has_credentials_with_username_password(self):
-        """Test has_credentials with username/password."""
-        config = MTNCloudConfig(username="user", password="pass")
-        assert config.has_credentials is True
+        assert config.has_credentials is expected
 
-    def test_has_credentials_empty(self):
-        """Test has_credentials when empty."""
-        config = MTNCloudConfig()
-        assert config.has_credentials is False
+    @pytest.mark.parametrize(
+        ("kwargs", "expected"),
+        [
+            ({"token": "test-token"}, "token"),
+            ({"username": "user", "password": "pass"}, "credentials"),
+            ({}, "none"),
+        ],
+    )
+    def test_get_auth_method(self, kwargs, expected):
+        """Detect the configured authentication method."""
+        config = MTNCloudConfig(**kwargs)
 
-    def test_get_auth_method_token(self):
-        """Test auth method detection for token."""
-        config = MTNCloudConfig(token="test-token")
-        assert config.get_auth_method() == "token"
-
-    def test_get_auth_method_credentials(self):
-        """Test auth method detection for credentials."""
-        config = MTNCloudConfig(username="user", password="pass")
-        assert config.get_auth_method() == "credentials"
-
-    def test_get_auth_method_none(self):
-        """Test auth method detection when none configured."""
-        config = MTNCloudConfig()
-        assert config.get_auth_method() == "none"
+        assert config.get_auth_method() == expected
 
     def test_env_variable_token(self):
         """Test loading token from environment variable."""
@@ -113,26 +121,25 @@ class TestMTNCloudConfig:
             config = MTNCloudConfig(token="explicit-token")
             assert config.token == "explicit-token"
 
-    def test_timeout_validation(self):
-        """Test timeout validation."""
-        # Valid range
+    def test_timeout_accepts_valid_value(self):
+        """Accept timeout values inside the supported range."""
         config = MTNCloudConfig(timeout=60)
+
         assert config.timeout == 60
 
-        # Too low
+    @pytest.mark.parametrize("timeout", [0.5, 500])
+    def test_timeout_rejects_invalid_value(self, timeout):
+        """Reject timeout values outside the supported range."""
         with pytest.raises(ValueError):
-            MTNCloudConfig(timeout=0.5)
+            MTNCloudConfig(timeout=timeout)
 
-        # Too high
-        with pytest.raises(ValueError):
-            MTNCloudConfig(timeout=500)
-
-    def test_max_retries_validation(self):
-        """Test max_retries validation."""
-        # Valid range
+    def test_max_retries_accepts_valid_value(self):
+        """Accept retry counts inside the supported range."""
         config = MTNCloudConfig(max_retries=5)
+
         assert config.max_retries == 5
 
-        # Too high
+    def test_max_retries_rejects_invalid_value(self):
+        """Reject retry counts outside the supported range."""
         with pytest.raises(ValueError):
             MTNCloudConfig(max_retries=20)

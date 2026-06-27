@@ -1,13 +1,13 @@
-"""
-Tests for InstanceType models and resource.
-"""
+"""Tests for instance type models and resources."""
 
+from typing import Any
 from unittest.mock import MagicMock
+
+import pytest
 
 from mtn_cloud.models.instance_type import InstanceType, InstanceTypeLayout
 from mtn_cloud.resources.instance_types import InstanceTypesResource
 
-# Sample instance type data matching MTN Cloud API response
 SAMPLE_INSTANCE_TYPE = {
     "id": 104,
     "name": "MTN CentOS Stream 10",
@@ -105,221 +105,266 @@ SAMPLE_INSTANCE_TYPES_LIST = {
 }
 
 
+@pytest.fixture
+def resource(mock_http: MagicMock) -> InstanceTypesResource:
+    """Return an instance types resource backed by a mocked HTTP client."""
+    return InstanceTypesResource(mock_http)
+
+
 class TestInstanceTypeLayoutModel:
     """Tests for InstanceTypeLayout model."""
 
-    def test_parse_layout(self):
-        """Test parsing layout from API response."""
-        layout_data = {
-            "id": 327,
-            "name": "MTN-CentOS Stream 10",
-            "provisionTypeCode": "openstack",
-        }
-        layout = InstanceTypeLayout.model_validate(layout_data)
-
-        assert layout.id == 327
-        assert layout.name == "MTN-CentOS Stream 10"
-        assert layout.provision_type_code == "openstack"
-
-    def test_layout_str(self):
-        """Test layout string representation."""
-        layout = InstanceTypeLayout(
-            id=327, name="MTN-CentOS Stream 10", provisionTypeCode="openstack"
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            ("id", 327),
+            ("name", "MTN-CentOS Stream 10"),
+            ("provision_type_code", "openstack"),
+        ],
+    )
+    def test_parse_layout_field(self, field: str, expected: Any) -> None:
+        """Parse layout fields."""
+        layout = InstanceTypeLayout.model_validate(
+            {
+                "id": 327,
+                "name": "MTN-CentOS Stream 10",
+                "provisionTypeCode": "openstack",
+            }
         )
-        assert "327" in str(layout)
-        assert "MTN-CentOS Stream 10" in str(layout)
+
+        assert getattr(layout, field) == expected
+
+    @pytest.mark.parametrize("expected", ["327", "MTN-CentOS Stream 10"])
+    def test_layout_str_contains_identity(self, expected: str) -> None:
+        """Include stable layout identity in string output."""
+        layout = InstanceTypeLayout(
+            id=327,
+            name="MTN-CentOS Stream 10",
+            provisionTypeCode="openstack",
+        )
+
+        assert expected in str(layout)
 
 
 class TestInstanceTypeModel:
     """Tests for InstanceType model."""
 
-    def test_parse_instance_type(self):
-        """Test parsing instance type from API response."""
-        it = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE)
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            ("id", 104),
+            ("name", "MTN CentOS Stream 10"),
+            ("code", "MTN-CS10"),
+            ("category", "os"),
+            ("active", True),
+            ("visibility", "public"),
+        ],
+    )
+    def test_parse_instance_type_field(self, field: str, expected: Any) -> None:
+        """Parse instance type fields."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE)
 
-        assert it.id == 104
-        assert it.name == "MTN CentOS Stream 10"
-        assert it.code == "MTN-CS10"
-        assert it.category == "os"
-        assert it.active is True
-        assert it.visibility == "public"
-        assert len(it.versions) == 1
-        assert "10" in it.versions
+        assert getattr(instance_type, field) == expected
 
-    def test_instance_type_str(self):
-        """Test instance type string representation includes id, name, code."""
-        it = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE)
-        str_repr = str(it)
+    def test_parse_instance_type_version_count(self) -> None:
+        """Parse instance type versions."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE)
 
-        assert "104" in str_repr
-        assert "MTN CentOS Stream 10" in str_repr
-        assert "MTN-CS10" in str_repr
+        assert len(instance_type.versions) == 1
 
-    def test_default_layout_id(self):
-        """Test getting default layout ID."""
-        it = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE)
+    def test_parse_instance_type_version_value(self) -> None:
+        """Parse instance type version values."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE)
 
-        assert it.default_layout_id == 327
+        assert "10" in instance_type.versions
 
-    def test_default_layout(self):
-        """Test getting default layout."""
-        it = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE)
+    @pytest.mark.parametrize("expected", ["104", "MTN CentOS Stream 10", "MTN-CS10"])
+    def test_instance_type_str_contains_identity(self, expected: str) -> None:
+        """Include stable instance type identity in string output."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE)
 
-        layout = it.default_layout
-        assert layout is not None
-        assert layout.id == 327
-        assert layout.name == "MTN-CentOS Stream 10"
+        assert expected in str(instance_type)
 
-    def test_layouts_property(self):
-        """Test accessing all layouts."""
-        it = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE_MULTIPLE_LAYOUTS)
+    def test_default_layout_id(self) -> None:
+        """Return the first layout ID as the default."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE)
 
-        assert len(it.layouts) == 3
-        assert it.layouts[0].id == 1313
-        assert it.layouts[1].id == 1315
-        assert it.layouts[2].id == 1312
+        assert instance_type.default_layout_id == 327
 
-    def test_get_layout_by_name(self):
-        """Test getting layout by name."""
-        it = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE_MULTIPLE_LAYOUTS)
+    @pytest.mark.parametrize(("field", "expected"), [("id", 327), ("name", "MTN-CentOS Stream 10")])
+    def test_default_layout_field(self, field: str, expected: Any) -> None:
+        """Return the first layout as the default."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE)
 
-        layout = it.get_layout_by_name("MTN Ubuntu")
-        assert layout is not None
-        assert layout.id == 1315
+        assert getattr(instance_type.default_layout, field) == expected
 
-        # Test not found
-        not_found = it.get_layout_by_name("NonExistent")
-        assert not_found is None
+    @pytest.mark.parametrize(("index", "expected"), [(0, 1313), (1, 1315), (2, 1312)])
+    def test_layout_id_by_index(self, index: int, expected: int) -> None:
+        """Expose all layouts in API order."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE_MULTIPLE_LAYOUTS)
 
-    def test_get_layout_by_id(self):
-        """Test getting layout by ID."""
-        it = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE_MULTIPLE_LAYOUTS)
+        assert instance_type.layouts[index].id == expected
 
-        layout = it.get_layout_by_id(1312)
-        assert layout is not None
-        assert layout.name == "MTN CentOS"
+    def test_layout_count(self) -> None:
+        """Expose all parsed layouts."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE_MULTIPLE_LAYOUTS)
 
-        # Test not found
-        not_found = it.get_layout_by_id(99999)
-        assert not_found is None
+        assert len(instance_type.layouts) == 3
 
-    def test_empty_layouts(self):
-        """Test instance type with no layouts."""
+    def test_get_layout_by_name(self) -> None:
+        """Find a layout by name."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE_MULTIPLE_LAYOUTS)
+
+        assert instance_type.get_layout_by_name("MTN Ubuntu").id == 1315
+
+    def test_get_layout_by_name_returns_none_when_missing(self) -> None:
+        """Return None when a layout name does not exist."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE_MULTIPLE_LAYOUTS)
+
+        assert instance_type.get_layout_by_name("NonExistent") is None
+
+    def test_get_layout_by_id(self) -> None:
+        """Find a layout by ID."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE_MULTIPLE_LAYOUTS)
+
+        assert instance_type.get_layout_by_id(1312).name == "MTN CentOS"
+
+    def test_get_layout_by_id_returns_none_when_missing(self) -> None:
+        """Return None when a layout ID does not exist."""
+        instance_type = InstanceType.model_validate(SAMPLE_INSTANCE_TYPE_MULTIPLE_LAYOUTS)
+
+        assert instance_type.get_layout_by_id(99999) is None
+
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            ("default_layout_id", None),
+            ("default_layout", None),
+            ("layouts", []),
+        ],
+    )
+    def test_empty_layout_field(self, field: str, expected: Any) -> None:
+        """Handle instance types with no layouts."""
         data = {**SAMPLE_INSTANCE_TYPE, "instanceTypeLayouts": []}
-        it = InstanceType.model_validate(data)
+        instance_type = InstanceType.model_validate(data)
 
-        assert it.default_layout_id is None
-        assert it.default_layout is None
-        assert len(it.layouts) == 0
+        assert getattr(instance_type, field) == expected
 
 
 class TestInstanceTypesResource:
     """Tests for InstanceTypesResource."""
 
-    def test_list_instance_types(self):
-        """Test listing instance types."""
-        mock_http = MagicMock()
+    def test_list_instance_type_count(
+        self,
+        resource: InstanceTypesResource,
+        mock_http: MagicMock,
+    ) -> None:
+        """Return all instance types from the list endpoint."""
         mock_http.get.return_value = SAMPLE_INSTANCE_TYPES_LIST
 
-        resource = InstanceTypesResource(mock_http)
-        instance_types = resource.list()
+        assert len(resource.list()) == 3
 
-        assert len(instance_types) == 3
-        assert instance_types[0].code == "MTN-CS10"
-        assert instance_types[1].code == "MTN-U24.04LTS"
-        assert instance_types[2].code == "MTN-MySQL01"
+    @pytest.mark.parametrize(
+        ("index", "expected"),
+        [(0, "MTN-CS10"), (1, "MTN-U24.04LTS"), (2, "MTN-MySQL01")],
+    )
+    def test_list_instance_type_code(
+        self,
+        resource: InstanceTypesResource,
+        mock_http: MagicMock,
+        index: int,
+        expected: str,
+    ) -> None:
+        """Parse listed instance type codes."""
+        mock_http.get.return_value = SAMPLE_INSTANCE_TYPES_LIST
+
+        assert resource.list()[index].code == expected
+
+    def test_list_instance_types_calls_get(
+        self,
+        resource: InstanceTypesResource,
+        mock_http: MagicMock,
+    ) -> None:
+        """Call the instance type list endpoint once."""
+        mock_http.get.return_value = SAMPLE_INSTANCE_TYPES_LIST
+
+        resource.list()
+
         mock_http.get.assert_called_once()
 
-    def test_get_instance_type(self):
-        """Test getting single instance type by ID."""
-        mock_http = MagicMock()
+    @pytest.mark.parametrize(("field", "expected"), [("id", 104), ("code", "MTN-CS10")])
+    def test_get_instance_type_field(
+        self,
+        resource: InstanceTypesResource,
+        mock_http: MagicMock,
+        field: str,
+        expected: Any,
+    ) -> None:
+        """Return an instance type by ID."""
         mock_http.get.return_value = {"instanceType": SAMPLE_INSTANCE_TYPE}
 
-        resource = InstanceTypesResource(mock_http)
-        it = resource.get(104)
+        assert getattr(resource.get(104), field) == expected
 
-        assert it.id == 104
-        assert it.code == "MTN-CS10"
+    def test_get_instance_type_path(
+        self,
+        resource: InstanceTypesResource,
+        mock_http: MagicMock,
+    ) -> None:
+        """Call the expected instance type detail endpoint."""
+        mock_http.get.return_value = {"instanceType": SAMPLE_INSTANCE_TYPE}
+
+        resource.get(104)
+
         mock_http.get.assert_called_with("/instance-types/104")
 
-    def test_get_by_code(self):
-        """Test getting instance type by code."""
-        mock_http = MagicMock()
+    @pytest.mark.parametrize(
+        ("lookup_method", "lookup_value", "field", "expected"),
+        [
+            ("get_by_code", "MTN-CS10", "code", "MTN-CS10"),
+            ("get_by_code", "MTN-CS10", "name", "MTN CentOS Stream 10"),
+            ("get_by_name", "MTN CentOS Stream 10", "name", "MTN CentOS Stream 10"),
+            ("get_by_name", "MTN CentOS Stream 10", "code", "MTN-CS10"),
+        ],
+    )
+    def test_lookup_instance_type_field(
+        self,
+        resource: InstanceTypesResource,
+        mock_http: MagicMock,
+        lookup_method: str,
+        lookup_value: str,
+        field: str,
+        expected: Any,
+    ) -> None:
+        """Look up instance types by stable identifiers."""
         mock_http.get.return_value = {"instanceTypes": [SAMPLE_INSTANCE_TYPE]}
 
-        resource = InstanceTypesResource(mock_http)
-        it = resource.get_by_code("MTN-CS10")
+        instance_type = getattr(resource, lookup_method)(lookup_value)
 
-        assert it.code == "MTN-CS10"
-        assert it.name == "MTN CentOS Stream 10"
+        assert getattr(instance_type, field) == expected
 
-    def test_get_by_name(self):
-        """Test getting instance type by name."""
-        mock_http = MagicMock()
+    @pytest.mark.parametrize(
+        ("method_name", "expected"),
+        [
+            ("list", "os"),
+            ("list_os", "os"),
+            ("list_databases", "sql"),
+            ("list_web", "web"),
+            ("list_apps", "apps"),
+        ],
+    )
+    def test_category_filter(
+        self,
+        resource: InstanceTypesResource,
+        mock_http: MagicMock,
+        method_name: str,
+        expected: str,
+    ) -> None:
+        """Send expected category filters."""
         mock_http.get.return_value = {"instanceTypes": [SAMPLE_INSTANCE_TYPE]}
 
-        resource = InstanceTypesResource(mock_http)
-        it = resource.get_by_name("MTN CentOS Stream 10")
+        if method_name == "list":
+            resource.list(category=expected)
+        else:
+            getattr(resource, method_name)()
 
-        assert it.name == "MTN CentOS Stream 10"
-        assert it.code == "MTN-CS10"
-
-    def test_list_with_category_filter(self):
-        """Test listing instance types filtered by category."""
-        mock_http = MagicMock()
-        mock_http.get.return_value = {"instanceTypes": [SAMPLE_INSTANCE_TYPE]}
-
-        resource = InstanceTypesResource(mock_http)
-        _instance_types = resource.list(category="os")
-
-        call_args = mock_http.get.call_args
-        params = call_args[1]["params"]
-        assert params["category"] == "os"
-
-    def test_list_os(self):
-        """Test listing OS instance types."""
-        mock_http = MagicMock()
-        mock_http.get.return_value = {"instanceTypes": [SAMPLE_INSTANCE_TYPE]}
-
-        resource = InstanceTypesResource(mock_http)
-        _instance_types = resource.list_os()
-
-        call_args = mock_http.get.call_args
-        params = call_args[1]["params"]
-        assert params["category"] == "os"
-
-    def test_list_databases(self):
-        """Test listing database instance types."""
-        mock_http = MagicMock()
-        mock_http.get.return_value = {"instanceTypes": []}
-
-        resource = InstanceTypesResource(mock_http)
-        _instance_types = resource.list_databases()
-
-        call_args = mock_http.get.call_args
-        params = call_args[1]["params"]
-        assert params["category"] == "sql"
-
-    def test_list_web(self):
-        """Test listing web server instance types."""
-        mock_http = MagicMock()
-        mock_http.get.return_value = {"instanceTypes": []}
-
-        resource = InstanceTypesResource(mock_http)
-        _instance_types = resource.list_web()
-
-        call_args = mock_http.get.call_args
-        params = call_args[1]["params"]
-        assert params["category"] == "web"
-
-    def test_list_apps(self):
-        """Test listing application instance types."""
-        mock_http = MagicMock()
-        mock_http.get.return_value = {"instanceTypes": []}
-
-        resource = InstanceTypesResource(mock_http)
-        _instance_types = resource.list_apps()
-
-        call_args = mock_http.get.call_args
-        params = call_args[1]["params"]
-        assert params["category"] == "apps"
+        assert mock_http.get.call_args.kwargs["params"]["category"] == expected

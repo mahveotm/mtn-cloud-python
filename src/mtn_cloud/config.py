@@ -43,7 +43,6 @@ class MTNCloudConfig(BaseSettings):
         extra="ignore",
     )
 
-    # Authentication
     token: str | None = Field(
         default=None,
         description="MTN Cloud API access token",
@@ -59,7 +58,6 @@ class MTNCloudConfig(BaseSettings):
         description="MTN Cloud password (use with username)",
     )
 
-    # API Configuration
     url: str = Field(
         default="https://console.cloud.mtn.ng",
         description="MTN Cloud API base URL",
@@ -70,7 +68,6 @@ class MTNCloudConfig(BaseSettings):
         description="API version (not currently used, for future)",
     )
 
-    # Request Configuration
     timeout: float = Field(
         default=30.0,
         ge=1.0,
@@ -92,19 +89,16 @@ class MTNCloudConfig(BaseSettings):
         description="Base delay between retries (exponential backoff)",
     )
 
-    # SSL Configuration
     verify_ssl: bool = Field(
         default=True,
         description="Verify SSL certificates",
     )
 
-    # Client Configuration
     user_agent: str = Field(
         default=DEFAULT_USER_AGENT,
         description="User-Agent header for API requests",
     )
 
-    # Debug
     debug: bool = Field(
         default=False,
         description="Enable debug logging",
@@ -135,5 +129,5 @@ class MTNCloudConfig(BaseSettings):
         return "none"
 
 
-# Default configuration instance
+# Shared default configuration for callers that want module-level settings.
 default_config = MTNCloudConfig()

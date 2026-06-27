@@ -23,30 +23,22 @@ class Group(Resource):
         group = cloud.groups.get(1)
     """
 
-    # Group details
     description: str | None = Field(default=None)
     code: str | None = Field(default=None)
 
-    # Location
     location: str | None = Field(default=None, description="Group location")
 
-    # Status
     active: bool = Field(default=True)
 
-    # Visibility
     visibility: str | None = Field(default=None)
 
-    # Account
     account_id: int | None = Field(default=None, alias="accountId")
 
-    # Stats
     server_count: int | None = Field(default=None, alias="serverCount")
     instance_count: int | None = Field(default=None, alias="instanceCount")
 
-    # Clouds/Zones
     zones: list[dict[str, Any]] = Field(default_factory=list, description="Associated clouds")
 
-    # Config
     config: dict[str, Any] | None = Field(default=None)
 
     @property

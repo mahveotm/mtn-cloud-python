@@ -31,7 +31,6 @@ class User(Resource):
         print(f"Email: {user.email}")
     """
 
-    # User details
     username: str = Field(..., description="Username")
     email: str | None = Field(default=None, description="Email address")
     display_name: str | None = Field(
@@ -42,25 +41,20 @@ class User(Resource):
     first_name: str | None = Field(default=None, alias="firstName")
     last_name: str | None = Field(default=None, alias="lastName")
 
-    # Account
     account_id: int | None = Field(default=None, alias="accountId")
     account: dict[str, Any] | None = Field(default=None)
 
-    # Role
     role: UserRole | None = Field(default=None)
     roles: list[UserRole] = Field(default_factory=list)
 
-    # Status
     enabled: bool = Field(default=True)
     account_expired: bool = Field(default=False, alias="accountExpired")
     account_locked: bool = Field(default=False, alias="accountLocked")
     password_expired: bool = Field(default=False, alias="passwordExpired")
 
-    # Preferences
     linux_username: str | None = Field(default=None, alias="linuxUsername")
     windows_username: str | None = Field(default=None, alias="windowsUsername")
 
-    # Default group
     default_group: dict[str, Any] | None = Field(default=None, alias="defaultGroup")
     default_cloud: dict[str, Any] | None = Field(default=None, alias="defaultCloud")
 

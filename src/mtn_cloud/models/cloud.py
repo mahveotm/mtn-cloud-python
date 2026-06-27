@@ -36,11 +36,9 @@ class Cloud(Resource):
         print(f"Location: {c.location}")
     """
 
-    # Cloud details
     description: str | None = Field(default=None)
     code: str | None = Field(default=None)
 
-    # Type
     zone_type: dict[str, Any] | None = Field(
         default=None,
         alias="zoneType",
@@ -52,32 +50,24 @@ class Cloud(Resource):
         description="Cloud type code",
     )
 
-    # Location
     location: str | None = Field(default=None)
 
-    # Status
     status: str | None = Field(default=None)
     enabled: bool = Field(default=True)
     visibility: str | None = Field(default=None)
 
-    # Account
     account_id: int | None = Field(default=None, alias="accountId")
     account: dict[str, Any] | None = Field(default=None)
 
-    # Groups
     groups: list[dict[str, Any]] = Field(default_factory=list, description="Associated groups")
 
-    # Stats
     server_count: int | None = Field(default=None, alias="serverCount")
 
-    # Config
     config: dict[str, Any] | None = Field(default=None)
 
-    # Features
     auto_recover_power_state: bool = Field(default=False, alias="autoRecoverPowerState")
     scale_priority: int | None = Field(default=None, alias="scalePriority")
 
-    # Costs
     cost_status: str | None = Field(default=None, alias="costStatus")
     cost_last_sync: str | None = Field(default=None, alias="costLastSync")
 
