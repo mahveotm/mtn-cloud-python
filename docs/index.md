@@ -18,7 +18,6 @@ Use this guide in two ways:
 8. [Advanced Cookbook](./advanced-cookbook.md)
 9. [API Overview](./api-overview.md)
 10. [API Reference](./api-reference/index.md)
-11. [Docstring Style Standard](./docstring-style.md)
 
 ## Who This Is For
 
