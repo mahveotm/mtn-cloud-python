@@ -13,6 +13,7 @@ from mtn_cloud.models.instance import (
     InstanceUpdate,
     InstanceVolume,
 )
+from mtn_cloud.models.snapshot import Snapshot, SnapshotCreate
 from mtn_cloud.resources.base import BaseResource
 
 if TYPE_CHECKING:
@@ -570,3 +571,79 @@ class InstancesResource(BaseResource[Instance]):
         response = self._http.get(path, params=params)
         result: List[Dict[str, Any]] = response.get("processes", [])
         return result
+
+    # ── Snapshot management ──────────────────────────────────────────────────
+
+    def list_snapshots(self, instance_id: int) -> List[Snapshot]:
+        """
+        List snapshots for an instance.
+
+        Args:
+            instance_id: Instance ID
+
+        Returns:
+            List of snapshots
+        """
+        path = f"{self._path}/{instance_id}/snapshots"
+        response = self._http.get(path)
+        return [Snapshot.model_validate(s) for s in response.get("snapshots", [])]
+
+    def create_snapshot(
+        self,
+        instance_id: int,
+        name: str,
+        *,
+        description: str | None = None,
+    ) -> Snapshot:
+        """
+        Create a snapshot of an instance.
+
+        The instance should be stopped or in a stable state before snapshotting
+        to ensure consistency.
+
+        Args:
+            instance_id: Instance ID
+            name: Snapshot name
+            description: Optional description
+
+        Returns:
+            Created snapshot
+        """
+        model = SnapshotCreate(name=name, description=description)
+        path = f"{self._path}/{instance_id}/snapshots"
+        response = self._http.post(path, json=model.to_api_payload())
+        snap_data = response.get("snapshot", response)
+        return Snapshot.model_validate(snap_data)
+
+    def revert_snapshot(self, instance_id: int, snapshot_id: int) -> bool:
+        """
+        Revert an instance to a snapshot.
+
+        This replaces the instance's current disk state with the snapshot.
+        The instance must be stopped before reverting.
+
+        Args:
+            instance_id: Instance ID
+            snapshot_id: Snapshot ID to revert to
+
+        Returns:
+            True if revert was initiated
+        """
+        path = f"{self._path}/{instance_id}/revert-snapshot/{snapshot_id}"
+        self._http.put(path)
+        return True
+
+    def delete_snapshot(self, instance_id: int, snapshot_id: int) -> bool:
+        """
+        Delete a snapshot.
+
+        Args:
+            instance_id: Instance ID
+            snapshot_id: Snapshot ID
+
+        Returns:
+            True if deleted
+        """
+        path = f"{self._path}/{instance_id}/snapshots/{snapshot_id}"
+        self._http.delete(path)
+        return True

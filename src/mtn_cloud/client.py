@@ -6,13 +6,16 @@ from mtn_cloud.config import MTNCloudConfig
 from mtn_cloud.http import HTTPClient
 from mtn_cloud.models.user import User
 from mtn_cloud.resources.archive_buckets import ArchiveBucketsResource
+from mtn_cloud.resources.backups import BackupsResource
 from mtn_cloud.resources.clouds import CloudsResource
 from mtn_cloud.resources.groups import GroupsResource
 from mtn_cloud.resources.instance_types import InstanceTypesResource
 from mtn_cloud.resources.instances import InstancesResource
 from mtn_cloud.resources.networks import NetworksResource
 from mtn_cloud.resources.plans import PlansResource
+from mtn_cloud.resources.security_groups import SecurityGroupsResource
 from mtn_cloud.resources.storage_buckets import StorageBucketsResource
+from mtn_cloud.resources.virtual_images import VirtualImagesResource
 
 
 class MTNCloud:
@@ -62,6 +65,9 @@ class MTNCloud:
         plans: Manage service plans
         storage_buckets: Manage storage buckets and file shares
         archive_buckets: Manage archive buckets and files
+        security_groups: Manage security groups and firewall rules
+        backups: Manage instance and storage backups
+        virtual_images: Discover and manage VM images
 
     Environment Variables:
         MTN_CLOUD_TOKEN: API access token
@@ -124,6 +130,9 @@ class MTNCloud:
         self._plans: PlansResource | None = None
         self._storage_buckets: StorageBucketsResource | None = None
         self._archive_buckets: ArchiveBucketsResource | None = None
+        self._security_groups: SecurityGroupsResource | None = None
+        self._backups: BackupsResource | None = None
+        self._virtual_images: VirtualImagesResource | None = None
 
     @property
     def instances(self) -> InstancesResource:
@@ -261,6 +270,56 @@ class MTNCloud:
         if self._archive_buckets is None:
             self._archive_buckets = ArchiveBucketsResource(self._http)
         return self._archive_buckets
+
+    @property
+    def security_groups(self) -> SecurityGroupsResource:
+        """
+        Access the security groups resource manager.
+
+        Security groups are the firewall layer for instances. Create and
+        configure a security group before provisioning an instance.
+
+        Example:
+            sg = cloud.security_groups.create(name="web-servers")
+            cloud.security_groups.create_rule(
+                sg.id,
+                name="allow-ssh",
+                direction="ingress",
+                protocol="tcp",
+                port_range="22",
+            )
+        """
+        if self._security_groups is None:
+            self._security_groups = SecurityGroupsResource(self._http)
+        return self._security_groups
+
+    @property
+    def backups(self) -> BackupsResource:
+        """
+        Access the backups resource manager.
+
+        Example:
+            for backup in cloud.backups.list():
+                print(f"{backup.name}: {backup.last_run}")
+
+            jobs = cloud.backups.list_jobs()
+        """
+        if self._backups is None:
+            self._backups = BackupsResource(self._http)
+        return self._backups
+
+    @property
+    def virtual_images(self) -> VirtualImagesResource:
+        """
+        Access the virtual images resource manager.
+
+        Example:
+            images = cloud.virtual_images.list()
+            ubuntu = cloud.virtual_images.get_by_name("Ubuntu 22.04")
+        """
+        if self._virtual_images is None:
+            self._virtual_images = VirtualImagesResource(self._http)
+        return self._virtual_images
 
     def whoami(self) -> User:
         """

@@ -128,6 +128,33 @@ cloud.instances.wait_until_running(instance.id, timeout=300)
 cloud.instances.wait_for_status(instance.id, "suspended", timeout=120)
 ```
 
+## Snapshots
+
+Snapshots capture the disk state of an instance at a point in time. Stop the instance before snapshotting to guarantee consistency.
+
+```python
+# Create a snapshot
+snap = cloud.instances.create_snapshot(
+    instance_id=123,
+    name="pre-upgrade",
+    description="State before OS upgrade",
+)
+print(snap.id, snap.name, snap.status)
+
+# List all snapshots for an instance
+snaps = cloud.instances.list_snapshots(instance_id=123)
+for s in snaps:
+    print(s.id, s.name, s.snapshot_created)
+
+# Revert to a snapshot (instance must be stopped)
+cloud.instances.stop(123)
+cloud.instances.wait_until_stopped(123)
+cloud.instances.revert_snapshot(instance_id=123, snapshot_id=snap.id)
+
+# Delete a snapshot
+cloud.instances.delete_snapshot(instance_id=123, snapshot_id=snap.id)
+```
+
 ## Common Pitfalls
 
 - **Resource pool not ready.** The SDK call will fail if you run it before the ~10 minute provisioning window completes. Wait and retry.

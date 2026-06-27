@@ -51,6 +51,9 @@ nav:
   - Instances: instances.md
   - Networking: networking.md
   - Storage: storage.md
+  - Security Groups: security-groups.md
+  - Backups: backups.md
+  - Virtual Images: virtual-images.md
   - Advanced Cookbook: advanced-cookbook.md
   - API Overview: api-overview.md
   - API Reference:
@@ -64,4 +67,7 @@ nav:
       - Plans: api-reference/plans.md
       - Storage Buckets: api-reference/storage-buckets.md
       - Archive Buckets: api-reference/archive-buckets.md
+      - Security Groups: api-reference/security-groups.md
+      - Backups: api-reference/backups.md
+      - Virtual Images: api-reference/virtual-images.md
   - Docstring Style: docstring-style.md
