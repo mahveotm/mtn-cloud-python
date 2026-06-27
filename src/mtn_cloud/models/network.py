@@ -238,6 +238,7 @@ class NetworkCreate(BaseModel):
     cloud_id: int
     group_id: int
     type_id: int | None = None
+    resource_pool_id: int | None = None
     display_name: str | None = Field(default=None, alias="displayName")
     labels: list[str] | None = None
     description: str | None = None
@@ -272,6 +273,8 @@ class NetworkCreate(BaseModel):
 
         if self.type_id is not None:
             network["type"] = {"id": self.type_id}
+        if self.resource_pool_id is not None:
+            network["zonePool"] = {"id": self.resource_pool_id}
         if self.display_name is not None:
             network["displayName"] = self.display_name
         if self.labels is not None:

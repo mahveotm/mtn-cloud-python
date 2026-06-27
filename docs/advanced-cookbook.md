@@ -103,9 +103,10 @@ from mtn_cloud import (
 try:
     cloud.networks.create(
         name="prod-net",
-        cloud_id=1,
+        cloud_id=4,
         group_id=621,
-        type_id=8,
+        type_id=12,             # an OpenStack type from list_types(openstack_only=True)
+        resource_pool_id=230,   # numeric pool ID from get_resource_pool(...).id
         cidr="10.42.10.0/24",
     )
 except AuthenticationError:

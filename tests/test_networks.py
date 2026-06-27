@@ -115,6 +115,7 @@ class TestNetworkPayloadModels:
             ("network.cidr", "192.168.10.0/24"),
             ("network.dnsPrimary", "8.8.8.8"),
             ("network.visibility", "private"),
+            ("network.zonePool.id", 230),
             ("network.tenants", [{"id": 1}, {"id": 2}]),
             ("network.resourcePermission.all", True),
         ],
@@ -126,6 +127,7 @@ class TestNetworkPayloadModels:
             cloud_id=1,
             group_id=10,
             type_id=7,
+            resource_pool_id=230,
             cidr="192.168.10.0/24",
             gateway="192.168.10.1",
             dns_primary="8.8.8.8",
@@ -135,6 +137,12 @@ class TestNetworkPayloadModels:
         ).to_api_payload()
 
         assert nested_value(payload, path) == expected
+
+    def test_network_accepts_null_labels(self) -> None:
+        """Coerce a null labels field from the API into an empty list."""
+        network = Network.model_validate({"id": 1, "name": "n", "labels": None})
+
+        assert network.labels == []
 
     @pytest.mark.parametrize(
         ("path", "expected"),

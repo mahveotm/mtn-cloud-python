@@ -33,21 +33,25 @@ print([(t.id, t.name) for t in network_types[:5]])
 
 ## Create a Network
 
+An OpenStack network requires an OpenStack `type_id` and a `resource_pool_id` (the numeric pool ID — the network is created inside that resource pool). Pick a private network type and a pool:
+
 ```python
 networks = cloud.networks.list(cloud_id=cloud_id)
 for network in networks[:5]:
     print(network.id, network.name, network.cidr)
 
+net_type = next(t for t in network_types if t.code == "openstackPrivate")
+pool = cloud.instances.get_resource_pool("my-project", group=group.name)
+
 new_network = cloud.networks.create(
     name="mtn-prod-net",
     cloud_id=cloud_id,                  # from group.cloud_ids[0]
     group_id=group.id,                  # from groups.get_by_name(...)
-    type_id=network_types[0].id,        # from list_types(openstack_only=True)
+    type_id=net_type.id,                # an OpenStack type from list_types(openstack_only=True)
+    resource_pool_id=pool.id,           # numeric pool ID from get_resource_pool(...)
     cidr="10.42.10.0/24",
     gateway="10.42.10.1",
     dns_primary="8.8.8.8",
-    visibility="private",
-    dhcp_server=True,                   # enables automatic IP assignment
 )
 
 print(new_network.id, new_network.name)

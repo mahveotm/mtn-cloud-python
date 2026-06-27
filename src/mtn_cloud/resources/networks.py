@@ -135,6 +135,7 @@ class NetworksResource(BaseResource[Network]):
         cloud_id: int,
         group_id: int,
         type_id: int | None = None,
+        resource_pool_id: int | None = None,
         display_name: str | None = None,
         labels: List[str] | None = None,
         description: str | None = None,
@@ -162,6 +163,10 @@ class NetworksResource(BaseResource[Network]):
         """
         Create a network using MTN OpenStack-compatible fields.
 
+        OpenStack network types (e.g. ``openstackPrivate``) require both an
+        OpenStack ``type_id`` from ``list_types(openstack_only=True)`` and a
+        ``resource_pool_id`` (the numeric pool ID from ``get_resource_pool``).
+
         Notes:
             - Non-OpenStack provider-specific `config` variants are intentionally excluded.
             - Use integer IDs for cloud/group/type to keep payload typing uniform.
@@ -171,6 +176,7 @@ class NetworksResource(BaseResource[Network]):
             cloud_id=cloud_id,
             group_id=group_id,
             type_id=type_id,
+            resource_pool_id=resource_pool_id,
             display_name=display_name,
             labels=labels,
             description=description,
@@ -295,7 +301,7 @@ class NetworksResource(BaseResource[Network]):
             phrase: Optional phrase filter
             openstack_only: Return only network types tagged for OpenStack
         """
-        params: dict[str, Any] = {}
+        params: dict[str, Any] = {"max": 500}
         if name:
             params["name"] = name
         if code:
