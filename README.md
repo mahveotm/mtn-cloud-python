@@ -40,7 +40,6 @@ pip install mtn-cloud
 - [Advanced Cookbook](https://mahveotm.github.io/mtn-cloud-python/advanced-cookbook/)
 - [API Overview](https://mahveotm.github.io/mtn-cloud-python/api-overview/)
 - [API Reference](https://mahveotm.github.io/mtn-cloud-python/api-reference/)
-- [Docstring Style Standard](https://mahveotm.github.io/mtn-cloud-python/docstring-style/)
 
 ## Quick Start
 

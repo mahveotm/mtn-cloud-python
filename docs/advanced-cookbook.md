@@ -149,8 +149,17 @@ with MTNCloud(token="your-api-token") as cloud:
 Pick explicit templates and plans instead of "first result" in production.
 
 ```python
+group = cloud.groups.get_by_name("MTNNG_CLOUD_AZ_1")
 target_type = cloud.instance_types.get_by_code("MTN-U24.04LTS")
-target_plan = cloud.plans.get_by_name("G2S4")
+
+plans = cloud.instances.list_service_plans(
+    zone_id=group.cloud_ids[0],
+    layout_id=target_type.default_layout_id,
+    group_id=group.id,
+)
+target_plan = next(p for p in plans if p["name"] == "G2S4")
+
+pool = cloud.instances.get_resource_pool("my-project", group=group.name)
 
 instance = cloud.instances.create(
     name="api-worker-01",
@@ -158,8 +167,8 @@ instance = cloud.instances.create(
     type=target_type.code,
     group="MTNNG_CLOUD_AZ_1",
     layout=target_type.default_layout_id,
-    plan=target_plan.id,
-    resource_pool_id="pool-214",
+    plan=target_plan["id"],
+    resource_pool_id=pool.code,
 )
 ```
 

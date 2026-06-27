@@ -70,4 +70,3 @@ nav:
       - Security Groups: api-reference/security-groups.md
       - Backups: api-reference/backups.md
       - Virtual Images: api-reference/virtual-images.md
-  - Docstring Style: docstring-style.md
