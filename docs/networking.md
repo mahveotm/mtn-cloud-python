@@ -5,46 +5,43 @@ Use this guide for creating and managing MTN Cloud networks via the SDK.
 ## Before You Start
 
 - You need an existing Resource Pool (Project). Create one from **Provisioning → Catalog → Create Project** if you haven't already.
-- MTN Cloud networking runs on OpenStack Neutron. Networks you create are private by default — VMs get private IPs automatically. Public internet access requires a floating IP and a router.
+- MTN Cloud networking runs on OpenStack Neutron. Networks you create are private by default — VMs get private IPs automatically. Public internet access is configured at provisioning time via the instance's external network (`os_external_network_id`), not through a standalone floating-IP API.
 - Use `list_types(openstack_only=True)` to discover the valid network type IDs for your account.
 
 ## Typical Networking Flow
 
-For internet-accessible VMs the full flow is:
-
 1. Create a network (with CIDR, gateway, DHCP).
-2. Create a Neutron router with the external network attached.
-3. Attach your network to the router.
-4. Provision instances on your network.
-5. Allocate and assign a floating IP for public access.
+2. Provision instances on your network.
+3. For public access, set `os_external_network_id` when creating the instance (see the [Instances guide](./instances.md)).
 
 ## Discover Reference Data
+
+The `cloud_id` (zone) comes from the group — the admin-level `clouds.list()` endpoint is restricted on most tenant accounts and isn't needed.
 
 ```python
 from mtn_cloud import MTNCloud
 
 cloud = MTNCloud(token="your-api-token")
 
-groups = cloud.groups.list()
-clouds = cloud.clouds.list_openstack()
+group = cloud.groups.get_by_name("MTNNG_CLOUD_AZ_1")
+cloud_id = group.cloud_ids[0]
 network_types = cloud.networks.list_types(openstack_only=True)
 
-print([(g.id, g.name) for g in groups[:5]])
-print([(c.id, c.name) for c in clouds[:5]])
+print("group:", group.id, "cloud_id:", cloud_id)
 print([(t.id, t.name) for t in network_types[:5]])
 ```
 
 ## Create a Network
 
 ```python
-networks = cloud.networks.list(cloud_id=1)
+networks = cloud.networks.list(cloud_id=cloud_id)
 for network in networks[:5]:
     print(network.id, network.name, network.cidr)
 
 new_network = cloud.networks.create(
     name="mtn-prod-net",
-    cloud_id=1,                         # from clouds.list_openstack()
-    group_id=621,                       # from groups.list()
+    cloud_id=cloud_id,                  # from group.cloud_ids[0]
+    group_id=group.id,                  # from groups.get_by_name(...)
     type_id=network_types[0].id,        # from list_types(openstack_only=True)
     cidr="10.42.10.0/24",
     gateway="10.42.10.1",
@@ -75,22 +72,21 @@ print(f"Subnets: {len(subnets)}")
 cloud.networks.delete(new_network.id)
 ```
 
-## Floating IP Operations
+## Network Pools
 
-Floating IPs provide public internet access to a VM. They are allocated from a pool and can be reassigned between instances without changing the private IP.
+Network pools are managed ranges of IP addresses used for static assignment. Inspect them and the individual addresses they track:
 
 ```python
-# List available floating IPs
-ips = cloud.networks.list_floating_ips(cloud_id=1)
-for ip in ips[:5]:
-    print(ip.id, ip.ip_address, ip.ip_status)
+# List pools with usage counts
+for pool in cloud.networks.list_pools():
+    print(pool.id, pool.name, f"{pool.free_count}/{pool.ip_count} free")
+    for r in pool.ip_ranges:
+        print("   range:", r.start_address, "-", r.end_address)
 
-# Allocate a new floating IP
-allocated = cloud.networks.allocate_floating_ip(
-    network_server_id=5,
-    floating_ip_pool_id=1,
-)
-print(allocated.id, allocated.ip_address)
+# Inspect a single pool and the addresses in use
+pool = cloud.networks.get_pool(9)
+for ip in cloud.networks.list_pool_ips(pool.id):
+    print(ip.ip_address, ip.ip_type, ip.hostname)
 ```
 
 ## Notes
