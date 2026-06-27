@@ -6,7 +6,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Modern Python SDK for [MTN Cloud](https://console.cloud.mtn.ng) with typed models, clear resource managers, and practical workflows for compute, networking, storage, and archives.
+A Modern Python SDK for [MTN Cloud](https://console.cloud.mtn.ng) with typed models, clear resource managers, and practical workflows for compute, networking, storage, archives, security groups, backups, and more.
 
 Docs: [mtn-cloud-python](https://mahveotm.github.io/mtn-cloud-python/)
 
@@ -34,6 +34,9 @@ pip install mtn-cloud
 - [Instances](https://mahveotm.github.io/mtn-cloud-python/instances/)
 - [Networking](https://mahveotm.github.io/mtn-cloud-python/networking/)
 - [Storage](https://mahveotm.github.io/mtn-cloud-python/storage/)
+- [Security Groups](https://mahveotm.github.io/mtn-cloud-python/security-groups/)
+- [Backups](https://mahveotm.github.io/mtn-cloud-python/backups/)
+- [Virtual Images](https://mahveotm.github.io/mtn-cloud-python/virtual-images/)
 - [Advanced Cookbook](https://mahveotm.github.io/mtn-cloud-python/advanced-cookbook/)
 - [API Overview](https://mahveotm.github.io/mtn-cloud-python/api-overview/)
 - [API Reference](https://mahveotm.github.io/mtn-cloud-python/api-reference/)
@@ -156,7 +159,79 @@ subnets = cloud.networks.list_subnets(new_network.id)
 print(f"Subnets: {len(subnets)}")
 ```
 
-### 5. Work with Storage and Archives
+### 5. Manage Security Groups
+
+```python
+# Create a security group and add rules
+sg = cloud.security_groups.create(
+    name="web-servers",
+    description="HTTP, HTTPS, and SSH access",
+)
+
+cloud.security_groups.create_rule(
+    sg.id,
+    name="allow-ssh",
+    direction="ingress",
+    protocol="tcp",
+    port_range="22",
+)
+
+cloud.security_groups.create_rule(
+    sg.id,
+    name="allow-https",
+    direction="ingress",
+    protocol="tcp",
+    port_range="443",
+)
+
+# Use the security group when provisioning
+instance = cloud.instances.create(
+    name="app-server-01",
+    cloud="MTNNG_CLOUD_AZ_1",
+    type="MTN-CS10",
+    group="MTNNG_CLOUD_AZ_1",
+    layout=327,
+    plan=6776,
+    resource_pool_id="pool-214",
+    security_group="web-servers",
+)
+```
+
+### 6. Snapshot Instances
+
+```python
+# Create a snapshot before a risky operation
+snap = cloud.instances.create_snapshot(
+    instance_id=instance.id,
+    name="pre-upgrade",
+)
+
+# Revert if something goes wrong (stop the instance first)
+cloud.instances.stop(instance.id)
+cloud.instances.wait_until_stopped(instance.id)
+cloud.instances.revert_snapshot(instance.id, snapshot_id=snap.id)
+```
+
+### 7. Work with Backups
+
+```python
+# List configured backups and their status
+for backup in cloud.backups.list():
+    print(f"{backup.name}: last_run={backup.last_run} status={backup.last_status}")
+
+# Trigger an immediate backup run
+cloud.backups.execute(backup_id=42)
+
+# Check execution history
+for result in cloud.backups.list_results(backup_id=42):
+    print(f"{result.start_date}: {result.status} ({result.size_in_mb} MB)")
+
+# List and execute backup jobs (schedules)
+for job in cloud.backups.list_jobs():
+    print(f"{job.name}: cron={job.cron_expression}")
+```
+
+### 8. Work with Storage and Archives
 
 ```python
 # Create S3-compatible storage provider

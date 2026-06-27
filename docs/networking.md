@@ -97,4 +97,4 @@ print(allocated.id, allocated.ip_address)
 
 - Many networking fields are OpenStack-specific. The SDK exposes the fields most relevant to MTN Cloud's environment.
 - Always discover and validate IDs (`cloud_id`, `group_id`, `type_id`) for your own account — they are tenant-specific and differ between environments.
-- Security groups (firewall rules) are separate from network configuration. Manage them in **Infrastructure → Network → Security Groups** in the console.
+- Security groups (firewall rules) are separate from network configuration. Manage them via `cloud.security_groups` — see the [Security Groups guide](./security-groups.md).

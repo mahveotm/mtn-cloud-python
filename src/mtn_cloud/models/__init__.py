@@ -10,6 +10,7 @@ from mtn_cloud.models.archive import (
     ArchiveDirectoryUploadResult,
     ArchiveFile,
 )
+from mtn_cloud.models.backup import Backup, BackupJob, BackupResult
 from mtn_cloud.models.base import BaseModel, PaginatedResponse, Resource
 from mtn_cloud.models.cloud import Cloud, CloudType
 from mtn_cloud.models.group import Group
@@ -36,12 +37,22 @@ from mtn_cloud.models.network import (
     Subnet,
 )
 from mtn_cloud.models.plan import ServicePlan
+from mtn_cloud.models.security_group import (
+    SecurityGroup,
+    SecurityGroupCreate,
+    SecurityGroupRule,
+    SecurityGroupRuleCreate,
+    SecurityGroupRuleUpdate,
+    SecurityGroupUpdate,
+)
+from mtn_cloud.models.snapshot import Snapshot, SnapshotCreate
 from mtn_cloud.models.storage_bucket import (
     StorageBucket,
     StorageBucketCreate,
     StorageBucketUpdate,
 )
 from mtn_cloud.models.user import User, UserRole
+from mtn_cloud.models.virtual_image import VirtualImage
 from mtn_cloud.models.volume import StorageVolume, Volume
 
 __all__ = [
@@ -97,4 +108,20 @@ __all__ = [
     # User
     "User",
     "UserRole",
+    # Security Group
+    "SecurityGroup",
+    "SecurityGroupRule",
+    "SecurityGroupCreate",
+    "SecurityGroupUpdate",
+    "SecurityGroupRuleCreate",
+    "SecurityGroupRuleUpdate",
+    # Snapshot
+    "Snapshot",
+    "SnapshotCreate",
+    # Backup
+    "Backup",
+    "BackupJob",
+    "BackupResult",
+    # Virtual Image
+    "VirtualImage",
 ]

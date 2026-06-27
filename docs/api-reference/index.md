@@ -13,6 +13,9 @@ This section documents the public SDK surface in endpoint-first format.
 - [Plans (`cloud.plans`)](./plans.md)
 - [Storage Buckets (`cloud.storage_buckets`)](./storage-buckets.md)
 - [Archive Buckets (`cloud.archive_buckets`)](./archive-buckets.md)
+- [Security Groups (`cloud.security_groups`)](./security-groups.md)
+- [Backups (`cloud.backups`)](./backups.md)
+- [Virtual Images (`cloud.virtual_images`)](./virtual-images.md)
 
 ## Conventions
 

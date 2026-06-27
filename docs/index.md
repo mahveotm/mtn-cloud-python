@@ -12,10 +12,13 @@ Use this guide in two ways:
 2. [Instances](./instances.md)
 3. [Networking](./networking.md)
 4. [Storage](./storage.md)
-5. [Advanced Cookbook](./advanced-cookbook.md)
-6. [API Overview](./api-overview.md)
-7. [API Reference](./api-reference/index.md)
-8. [Docstring Style Standard](./docstring-style.md)
+5. [Security Groups](./security-groups.md)
+6. [Backups](./backups.md)
+7. [Virtual Images](./virtual-images.md)
+8. [Advanced Cookbook](./advanced-cookbook.md)
+9. [API Overview](./api-overview.md)
+10. [API Reference](./api-reference/index.md)
+11. [Docstring Style Standard](./docstring-style.md)
 
 ## Who This Is For
 
@@ -36,6 +39,9 @@ Use this guide in two ways:
 2. Instances
 3. Networking
 4. Storage
-5. API Overview
-6. API Reference
-7. Advanced Cookbook
+5. Security Groups
+6. Backups
+7. Virtual Images
+8. API Overview
+9. API Reference
+10. Advanced Cookbook

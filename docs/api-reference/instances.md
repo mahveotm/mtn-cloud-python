@@ -165,3 +165,35 @@ Client-side polling helper.
     - `max_results`: maps to query `max`
 - Returns: list from response key `processes`
 - Raises: common API exceptions
+
+---
+
+## Snapshot management
+
+### `list_snapshots(instance_id: int) -> list[Snapshot]`
+
+- Endpoint: `GET /api/instances/{instance_id}/snapshots`
+- Returns: `list[Snapshot]`
+- Raises: common API exceptions
+
+### `create_snapshot(instance_id: int, name: str, *, description=None) -> Snapshot`
+
+- Endpoint: `POST /api/instances/{instance_id}/snapshots`
+- Parameters:
+    - `name`: snapshot name
+    - `description`: optional description
+- Returns: `Snapshot`
+- Raises: common API exceptions
+
+### `revert_snapshot(instance_id: int, snapshot_id: int) -> bool`
+
+- Endpoint: `PUT /api/instances/{instance_id}/revert-snapshot/{snapshot_id}`
+- The instance should be stopped before reverting
+- Returns: `True` when revert is initiated
+- Raises: common API exceptions
+
+### `delete_snapshot(instance_id: int, snapshot_id: int) -> bool`
+
+- Endpoint: `DELETE /api/instances/{instance_id}/snapshots/{snapshot_id}`
+- Returns: `True` on success
+- Raises: common API exceptions

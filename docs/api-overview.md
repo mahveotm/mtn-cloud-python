@@ -19,6 +19,9 @@ from mtn_cloud import MTNCloud
 - `plans`
 - `storage_buckets`
 - `archive_buckets`
+- `security_groups`
+- `backups`
+- `virtual_images`
 
 ## Authentication Options
 
@@ -43,6 +46,9 @@ cloud.instances.create(...)
 cloud.instances.update(instance_id=123, name="new-name")
 cloud.instances.delete(123)
 
+cloud.instances.create_snapshot(123, "pre-upgrade")
+cloud.instances.revert_snapshot(123, snapshot_id=456)
+
 cloud.networks.create(...)
 cloud.networks.update(298, description="updated")
 cloud.networks.delete(298)
@@ -50,6 +56,11 @@ cloud.networks.delete(298)
 cloud.storage_buckets.create_s3(...)
 cloud.archive_buckets.create(...)
 cloud.archive_buckets.upload_file(...)
+
+cloud.security_groups.create(name="web-servers")
+cloud.security_groups.create_rule(sg_id, direction="ingress", protocol="tcp", port_range="22")
+
+cloud.backups.execute(backup_id=42)
 ```
 
 ## Exception Hierarchy
@@ -80,6 +91,10 @@ Resource methods return typed Pydantic models, for example:
 - `StorageBucket`
 - `ArchiveBucket`
 - `ArchiveFile`
+- `SecurityGroup`, `SecurityGroupRule`
+- `Snapshot`
+- `Backup`, `BackupJob`, `BackupResult`
+- `VirtualImage`
 
 ## Naming Conventions
 
