@@ -174,7 +174,7 @@ class SecurityGroupsResource(BaseResource[SecurityGroup]):
         """
         return self._delete(security_group_id)
 
-    # ── Rule management ──────────────────────────────────────────────────────
+    # Rule management
 
     def list_rules(self, security_group_id: int) -> List[SecurityGroupRule]:
         """

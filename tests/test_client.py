@@ -1,183 +1,230 @@
-"""
-Tests for MTNCloud client.
-"""
+"""Tests for the MTNCloud client."""
 
+from typing import Any
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from mtn_cloud import MTNCloud, MTNCloudConfig
 from mtn_cloud.models.user import User
+from mtn_cloud.resources.archive_buckets import ArchiveBucketsResource
+from mtn_cloud.resources.backups import BackupsResource
+from mtn_cloud.resources.clouds import CloudsResource
+from mtn_cloud.resources.groups import GroupsResource
+from mtn_cloud.resources.instance_types import InstanceTypesResource
+from mtn_cloud.resources.instances import InstancesResource
+from mtn_cloud.resources.networks import NetworksResource
+from mtn_cloud.resources.plans import PlansResource
+from mtn_cloud.resources.security_groups import SecurityGroupsResource
+from mtn_cloud.resources.storage_buckets import StorageBucketsResource
+from mtn_cloud.resources.virtual_images import VirtualImagesResource
+
+
+@pytest.fixture
+def patched_http_client():
+    """Patch the HTTP client used by MTNCloud."""
+    with patch("mtn_cloud.client.HTTPClient") as mock_http_class:
+        yield mock_http_class
 
 
 class TestMTNCloudInit:
     """Tests for MTNCloud initialization."""
 
-    def test_init_with_token(self):
-        """Test initialization with token."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(token="test-token")
-            assert cloud.config.token == "test-token"
+    @pytest.mark.parametrize(
+        ("kwargs", "field", "expected"),
+        [
+            ({"token": "test-token"}, "token", "test-token"),
+            ({"username": "user", "password": "pass"}, "username", "user"),
+            ({"username": "user", "password": "pass"}, "password", "pass"),
+            (
+                {"token": "test", "url": "https://custom.example.com"},
+                "url",
+                "https://custom.example.com",
+            ),
+        ],
+    )
+    def test_init_config_field(
+        self,
+        patched_http_client: MagicMock,
+        kwargs: dict[str, Any],
+        field: str,
+        expected: Any,
+    ) -> None:
+        """Build config from constructor arguments."""
+        cloud = MTNCloud(**kwargs)
 
-    def test_init_with_username_password(self):
-        """Test initialization with username/password."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(username="user", password="pass")
-            assert cloud.config.username == "user"
-            assert cloud.config.password == "pass"
+        assert getattr(cloud.config, field) == expected
 
-    def test_init_with_custom_url(self):
-        """Test initialization with custom URL."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(token="test", url="https://custom.example.com")
-            assert cloud.config.url == "https://custom.example.com"
-
-    def test_init_with_config_object(self):
-        """Test initialization with config object."""
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            ("token", "config-token"),
+            ("timeout", 60),
+        ],
+    )
+    def test_init_with_config_object(
+        self,
+        patched_http_client: MagicMock,
+        field: str,
+        expected: Any,
+    ) -> None:
+        """Use a provided config object unchanged."""
         config = MTNCloudConfig(token="config-token", timeout=60)
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(config=config)
-            assert cloud.config.token == "config-token"
-            assert cloud.config.timeout == 60
 
-    def test_default_url(self):
-        """Test that default URL is MTN Cloud."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(token="test")
-            assert "console.cloud.mtn.ng" in cloud.config.url
+        cloud = MTNCloud(config=config)
+
+        assert getattr(cloud.config, field) == expected
+
+    def test_default_url(self, patched_http_client: MagicMock) -> None:
+        """Default to the MTN Cloud console URL."""
+        cloud = MTNCloud(token="test")
+
+        assert "console.cloud.mtn.ng" in cloud.config.url
 
 
 class TestMTNCloudResources:
     """Tests for resource manager access."""
 
-    def test_instances_property(self):
-        """Test instances resource manager."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(token="test")
-            instances = cloud.instances
-            assert instances is not None
-            # Should return same instance on repeated access
-            assert cloud.instances is instances
+    @pytest.mark.parametrize(
+        ("property_name", "resource_type"),
+        [
+            ("instances", InstancesResource),
+            ("instance_types", InstanceTypesResource),
+            ("networks", NetworksResource),
+            ("groups", GroupsResource),
+            ("clouds", CloudsResource),
+            ("plans", PlansResource),
+            ("storage_buckets", StorageBucketsResource),
+            ("archive_buckets", ArchiveBucketsResource),
+            ("security_groups", SecurityGroupsResource),
+            ("backups", BackupsResource),
+            ("virtual_images", VirtualImagesResource),
+        ],
+    )
+    def test_resource_property_type(
+        self,
+        patched_http_client: MagicMock,
+        property_name: str,
+        resource_type: type,
+    ) -> None:
+        """Expose each service resource manager."""
+        cloud = MTNCloud(token="test")
 
-    def test_instance_types_property(self):
-        """Test instance types resource manager."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(token="test")
-            instance_types = cloud.instance_types
-            assert instance_types is not None
-            # Should return same instance on repeated access
-            assert cloud.instance_types is instance_types
+        assert isinstance(getattr(cloud, property_name), resource_type)
 
-    def test_networks_property(self):
-        """Test networks resource manager."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(token="test")
-            networks = cloud.networks
-            assert networks is not None
+    @pytest.mark.parametrize(
+        "property_name",
+        [
+            "instances",
+            "instance_types",
+            "networks",
+            "groups",
+            "clouds",
+            "plans",
+            "storage_buckets",
+            "archive_buckets",
+            "security_groups",
+            "backups",
+            "virtual_images",
+        ],
+    )
+    def test_resource_property_is_cached(
+        self,
+        patched_http_client: MagicMock,
+        property_name: str,
+    ) -> None:
+        """Cache service resource managers per client."""
+        cloud = MTNCloud(token="test")
 
-    def test_groups_property(self):
-        """Test groups resource manager."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(token="test")
-            groups = cloud.groups
-            assert groups is not None
-
-    def test_clouds_property(self):
-        """Test clouds resource manager."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(token="test")
-            clouds = cloud.clouds
-            assert clouds is not None
-            assert cloud.clouds is clouds
-
-    def test_plans_property(self):
-        """Test plans resource manager."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(token="test")
-            plans = cloud.plans
-            assert plans is not None
-
-    def test_storage_buckets_property(self):
-        """Test storage buckets resource manager."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(token="test")
-            buckets = cloud.storage_buckets
-            assert buckets is not None
-            assert cloud.storage_buckets is buckets
-
-    def test_archive_buckets_property(self):
-        """Test archive buckets resource manager."""
-        with patch("mtn_cloud.client.HTTPClient"):
-            cloud = MTNCloud(token="test")
-            buckets = cloud.archive_buckets
-            assert buckets is not None
-            assert cloud.archive_buckets is buckets
+        assert getattr(cloud, property_name) is getattr(cloud, property_name)
 
 
 class TestMTNCloudContextManager:
     """Tests for context manager functionality."""
 
-    def test_context_manager(self):
-        """Test using client as context manager."""
-        with patch("mtn_cloud.client.HTTPClient") as MockHTTP:
-            mock_http = MagicMock()
-            MockHTTP.return_value = mock_http
+    def test_context_manager_returns_client(self, patched_http_client: MagicMock) -> None:
+        """Return the client from context manager entry."""
+        patched_http_client.return_value = MagicMock()
 
-            with MTNCloud(token="test") as cloud:
-                assert cloud is not None
+        with MTNCloud(token="test") as cloud:
+            assert isinstance(cloud, MTNCloud)
 
-            # Should close on exit
-            mock_http.close.assert_called_once()
+    def test_context_manager_closes_http(self, patched_http_client: MagicMock) -> None:
+        """Close the HTTP client when leaving a context manager."""
+        mock_http = MagicMock()
+        patched_http_client.return_value = mock_http
+
+        with MTNCloud(token="test"):
+            pass
+
+        mock_http.close.assert_called_once()
 
 
 class TestMTNCloudWhoami:
     """Tests for whoami method."""
 
-    def test_whoami(self):
-        """Test getting current user."""
-        with patch("mtn_cloud.client.HTTPClient") as MockHTTP:
-            mock_http = MagicMock()
-            mock_http.get.return_value = {
-                "user": {
-                    "id": 1,
-                    "username": "testuser",
-                    "email": "test@example.com",
-                }
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            ("username", "testuser"),
+            ("email", "test@example.com"),
+        ],
+    )
+    def test_whoami_user_field(
+        self,
+        patched_http_client: MagicMock,
+        field: str,
+        expected: Any,
+    ) -> None:
+        """Parse the current authenticated user."""
+        mock_http = MagicMock()
+        mock_http.get.return_value = {
+            "user": {
+                "id": 1,
+                "username": "testuser",
+                "email": "test@example.com",
             }
-            MockHTTP.return_value = mock_http
+        }
+        patched_http_client.return_value = mock_http
 
-            cloud = MTNCloud(token="test")
-            cloud._http = mock_http
+        user = MTNCloud(token="test").whoami()
 
-            user = cloud.whoami()
+        assert getattr(user, field) == expected
 
-            assert isinstance(user, User)
-            assert user.username == "testuser"
-            assert user.email == "test@example.com"
-            mock_http.get.assert_called_with("/whoami")
+    def test_whoami_returns_user_model(self, patched_http_client: MagicMock) -> None:
+        """Return a User model."""
+        mock_http = MagicMock()
+        mock_http.get.return_value = {"user": {"id": 1, "username": "testuser"}}
+        patched_http_client.return_value = mock_http
+
+        assert isinstance(MTNCloud(token="test").whoami(), User)
+
+    def test_whoami_request_path(self, patched_http_client: MagicMock) -> None:
+        """Call the current-user endpoint."""
+        mock_http = MagicMock()
+        mock_http.get.return_value = {"user": {"id": 1, "username": "testuser"}}
+        patched_http_client.return_value = mock_http
+
+        MTNCloud(token="test").whoami()
+
+        mock_http.get.assert_called_with("/whoami")
 
 
 class TestMTNCloudPing:
     """Tests for ping method."""
 
-    def test_ping_success(self):
-        """Test ping returns True on success."""
-        with patch("mtn_cloud.client.HTTPClient") as MockHTTP:
-            mock_http = MagicMock()
-            mock_http.get.return_value = {"user": {"id": 1, "username": "test"}}
-            MockHTTP.return_value = mock_http
+    def test_ping_success(self, patched_http_client: MagicMock) -> None:
+        """Return true when whoami succeeds."""
+        mock_http = MagicMock()
+        mock_http.get.return_value = {"user": {"id": 1, "username": "test"}}
+        patched_http_client.return_value = mock_http
 
-            cloud = MTNCloud(token="test")
-            cloud._http = mock_http
+        assert MTNCloud(token="test").ping() is True
 
-            assert cloud.ping() is True
+    def test_ping_failure(self, patched_http_client: MagicMock) -> None:
+        """Return false when whoami fails."""
+        mock_http = MagicMock()
+        mock_http.get.side_effect = Exception("Connection failed")
+        patched_http_client.return_value = mock_http
 
-    def test_ping_failure(self):
-        """Test ping returns False on failure."""
-        with patch("mtn_cloud.client.HTTPClient") as MockHTTP:
-            mock_http = MagicMock()
-            mock_http.get.side_effect = Exception("Connection failed")
-            MockHTTP.return_value = mock_http
-
-            cloud = MTNCloud(token="test")
-            cloud._http = mock_http
-
-            assert cloud.ping() is False
+        assert MTNCloud(token="test").ping() is False

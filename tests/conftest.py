@@ -1,13 +1,30 @@
-"""
-Test configuration and fixtures.
-"""
+"""Test configuration, fixtures, and assertion helpers."""
 
+from collections.abc import Mapping
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from mtn_cloud import MTNCloud, MTNCloudConfig
 from mtn_cloud.http import HTTPClient
+
+
+def nested_value(data: Mapping[str, Any], path: str) -> Any:
+    """Return a nested value from a dotted mapping/list path."""
+    value: Any = data
+    for key in path.split("."):
+        if isinstance(value, list):
+            value = value[int(key)]
+        else:
+            value = value[key]
+    return value
+
+
+@pytest.fixture
+def mock_http():
+    """Create a mocked resource HTTP client."""
+    return MagicMock()
 
 
 @pytest.fixture

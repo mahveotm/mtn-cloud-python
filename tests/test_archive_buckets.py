@@ -1,8 +1,7 @@
-"""
-Tests for ArchiveBucket models and resource.
-"""
+"""Tests for archive bucket models and resources."""
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -15,6 +14,8 @@ from mtn_cloud.models.archive import (
     ArchiveFile,
 )
 from mtn_cloud.resources.archive_buckets import ArchiveBucketsResource
+
+from .conftest import nested_value
 
 SAMPLE_ARCHIVE_BUCKET = {
     "id": 1113,
@@ -48,24 +49,57 @@ SAMPLE_ARCHIVE_FILE = {
 class TestArchiveModels:
     """Tests for archive models."""
 
-    def test_parse_archive_bucket(self):
-        """Test parsing archive bucket."""
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            ("id", 1113),
+            ("name", "apitestmybucket"),
+            ("storage_provider.id", 113),
+        ],
+    )
+    def test_parse_archive_bucket_field(self, field: str, expected: Any):
+        """Parse archive bucket fields."""
         bucket = ArchiveBucket.model_validate(SAMPLE_ARCHIVE_BUCKET)
-        assert bucket.id == 1113
-        assert bucket.name == "apitestmybucket"
+
+        assert nested_value({"bucket": bucket.model_dump()}, f"bucket.{field}") == expected
+
+    def test_parse_archive_bucket_storage_provider(self):
+        """Parse archive bucket storage provider details."""
+        bucket = ArchiveBucket.model_validate(SAMPLE_ARCHIVE_BUCKET)
+
         assert bucket.storage_provider is not None
-        assert bucket.storage_provider.id == 113
 
-    def test_parse_archive_file(self):
-        """Test parsing archive file."""
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            ("id", 5338),
+            ("name", "test.txt"),
+            ("archive_bucket.name", "apitestmybucket"),
+        ],
+    )
+    def test_parse_archive_file_field(self, field: str, expected: Any):
+        """Parse archive file fields."""
         file_obj = ArchiveFile.model_validate(SAMPLE_ARCHIVE_FILE)
-        assert file_obj.id == 5338
-        assert file_obj.name == "test.txt"
-        assert file_obj.archive_bucket is not None
-        assert file_obj.archive_bucket.name == "apitestmybucket"
 
-    def test_archive_bucket_create_payload(self):
-        """Test archive bucket create payload generation."""
+        assert nested_value({"file": file_obj.model_dump()}, f"file.{field}") == expected
+
+    def test_parse_archive_file_bucket(self):
+        """Parse archive file bucket details."""
+        file_obj = ArchiveFile.model_validate(SAMPLE_ARCHIVE_FILE)
+
+        assert file_obj.archive_bucket is not None
+
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            ("archiveBucket.name", "mybucket"),
+            ("archiveBucket.storageProvider.id", 113),
+            ("archiveBucket.visibility", "private"),
+            ("archiveBucket.isPublic", False),
+        ],
+    )
+    def test_archive_bucket_create_payload_field(self, path: str, expected: Any):
+        """Build archive bucket create payload fields."""
         payload = ArchiveBucketCreate(
             name="mybucket",
             storage_provider_id=113,
@@ -73,10 +107,7 @@ class TestArchiveModels:
             isPublic=False,
         ).to_api_payload()
 
-        assert payload["archiveBucket"]["name"] == "mybucket"
-        assert payload["archiveBucket"]["storageProvider"]["id"] == 113
-        assert payload["archiveBucket"]["visibility"] == "private"
-        assert payload["archiveBucket"]["isPublic"] is False
+        assert nested_value(payload, path) == expected
 
 
 class TestArchiveBucketsResource:
@@ -185,8 +216,17 @@ class TestArchiveBucketsResource:
         assert "bucket_name='missing-bucket'" in message
         assert "remote_path='/'" in message
 
-    def test_upload_archive_file_invalid_filename(self, tmp_path: Path):
-        """Test upload rejects invalid filenames such as names with spaces."""
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "bad file name.txt",
+            "bad'name.txt",
+            "",
+            ".env",
+        ],
+    )
+    def test_upload_archive_file_invalid_filename(self, tmp_path: Path, filename: str):
+        """Reject invalid archive upload filenames before making requests."""
         local_file = tmp_path / "test.txt"
         local_file.write_text("hello", encoding="utf-8")
 
@@ -198,61 +238,7 @@ class TestArchiveBucketsResource:
                 bucket_name="apitestmybucket",
                 remote_path="/",
                 local_path=local_file,
-                filename="bad file name.txt",
-            )
-
-        mock_http.request.assert_not_called()
-
-    def test_upload_archive_file_invalid_waf_sensitive_char(self, tmp_path: Path):
-        """Test upload rejects filenames with chars known to be blocked by backend WAF."""
-        local_file = tmp_path / "test.txt"
-        local_file.write_text("hello", encoding="utf-8")
-
-        mock_http = MagicMock()
-        resource = ArchiveBucketsResource(mock_http)
-
-        with pytest.raises(ValueError):
-            resource.upload_file(
-                bucket_name="apitestmybucket",
-                remote_path="/",
-                local_path=local_file,
-                filename="bad'name.txt",
-            )
-
-        mock_http.request.assert_not_called()
-
-    def test_upload_archive_file_empty_filename_is_invalid(self, tmp_path: Path):
-        """Test explicit empty filename is rejected."""
-        local_file = tmp_path / "test.txt"
-        local_file.write_text("hello", encoding="utf-8")
-
-        mock_http = MagicMock()
-        resource = ArchiveBucketsResource(mock_http)
-
-        with pytest.raises(ValueError):
-            resource.upload_file(
-                bucket_name="apitestmybucket",
-                remote_path="/",
-                local_path=local_file,
-                filename="",
-            )
-
-        mock_http.request.assert_not_called()
-
-    def test_upload_archive_file_leading_dot_is_invalid(self, tmp_path: Path):
-        """Test filenames starting with dot are rejected."""
-        local_file = tmp_path / "test.txt"
-        local_file.write_text("hello", encoding="utf-8")
-
-        mock_http = MagicMock()
-        resource = ArchiveBucketsResource(mock_http)
-
-        with pytest.raises(ValueError):
-            resource.upload_file(
-                bucket_name="apitestmybucket",
-                remote_path="/",
-                local_path=local_file,
-                filename=".env",
+                filename=filename,
             )
 
         mock_http.request.assert_not_called()

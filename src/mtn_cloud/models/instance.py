@@ -50,14 +50,13 @@ class InstanceNetwork(BaseModel):
         default=None, alias="ipMode", description="IP mode: 'static', 'dhcp', or 'pool'"
     )
 
-    # Nested network object (from API response)
+    # API responses embed the full network object instead of only the ID.
     network: dict[str, Any] | None = None
 
     def to_api_payload(self) -> dict[str, Any]:
         """Convert to API request payload for network interface."""
         payload: dict[str, Any] = {}
 
-        # Network should be nested as {id: ...}
         if self.network_id:
             payload["network"] = {"id": self.network_id}
         elif self.network:
@@ -65,7 +64,6 @@ class InstanceNetwork(BaseModel):
 
         if self.ip_address:
             payload["ipAddress"] = self.ip_address
-            # Default to static mode when IP address is provided
             payload["ipMode"] = self.ip_mode or "static"
         elif self.ip_mode:
             payload["ipMode"] = self.ip_mode
@@ -139,10 +137,8 @@ class Instance(Resource):
         instance.start()
     """
 
-    # Basic info
     description: str | None = Field(default=None, description="Instance description")
 
-    # Status
     status: str = Field(default="unknown", description="Current instance status")
     status_message: str | None = Field(
         default=None,
@@ -150,16 +146,13 @@ class Instance(Resource):
         description="Status details",
     )
 
-    # Type and plan
     instance_type: InstanceType | None = Field(default=None, alias="instanceType")
     plan: InstancePlan | None = None
     layout: dict[str, Any] | None = None
 
-    # Location
     cloud: dict[str, Any] | None = Field(default=None, description="Cloud/zone info")
     group: dict[str, Any] | None = Field(default=None, alias="site", description="Group/site info")
 
-    # Network
     ip_address: str | None = Field(
         default=None,
         alias="ipAddress",
@@ -176,28 +169,23 @@ class Instance(Resource):
         description="Network interfaces",
     )
 
-    # Storage
     volumes: list[dict[str, Any]] = Field(
         default_factory=list,
         description="Attached volumes",
     )
 
-    # Configuration
     config: dict[str, Any] | None = Field(default=None, description="Instance config")
 
-    # Resources
     max_memory: int | None = Field(default=None, alias="maxMemory")
     max_cores: int | None = Field(default=None, alias="maxCores")
     max_storage: int | None = Field(default=None, alias="maxStorage")
 
-    # Labels/tags
     labels: list[str] = Field(default_factory=list, description="Instance labels")
     tags: list[dict[str, Any]] = Field(default_factory=list, description="Instance tags")
 
-    # Timestamps
     provisioned_date: datetime | None = Field(default=None, alias="dateProvisioned")
 
-    # Internal reference to resource manager (set by the SDK)
+    # Bound by resource managers so model instances can expose convenience actions.
     _resource: Optional["InstancesResource"] = None
 
     def _set_resource(self, resource: "InstancesResource") -> None:
@@ -233,7 +221,6 @@ class Instance(Resource):
             return self.group.get("id")
         return None
 
-    # Action methods - delegate to resource manager
     def start(self) -> "Instance":
         """Start the instance."""
         if self._resource is None:
@@ -269,7 +256,6 @@ class Instance(Resource):
         if self._resource is None:
             raise RuntimeError("Instance not bound to a resource manager")
         updated = self._resource.get(self.id)
-        # Update self with new data
         for field in self.model_fields.keys():
             if hasattr(updated, field):
                 setattr(self, field, getattr(updated, field))
@@ -304,7 +290,6 @@ class InstanceCreate(BaseModel):
         )
     """
 
-    # Required fields
     name: str = Field(..., min_length=1, max_length=255, description="Instance name")
     cloud: str = Field(..., description="Cloud name (e.g., 'MTNNG_CLOUD_AZ_1')")
     type: str = Field(..., description="Instance Type code (e.g., 'MTN-CS10')")
@@ -312,23 +297,19 @@ class InstanceCreate(BaseModel):
     layout: int = Field(..., description="Layout ID (e.g., 327)")
     plan: int = Field(..., description="Service plan ID (e.g., 6923)")
 
-    # Optional fields
     description: str | None = Field(default=None, description="Instance description")
     environment: str | None = Field(default=None, description="Environment code")
 
-    # Labels and tags
     labels: list[str] = Field(default_factory=list, description="Labels (keywords)")
     tags: dict[str, str] | list[dict[str, str]] = Field(
         default_factory=dict, description="Metadata tags"
     )
 
-    # Copies and layout size
     copies: int = Field(default=1, description="Number of copies to provision")
     layout_size: int = Field(
         default=1, alias="layoutSize", description="Multiply factor of containers/vms"
     )
 
-    # MTN Cloud Config Options
     resource_pool_id: str = Field(
         ...,
         min_length=1,
@@ -346,28 +327,18 @@ class InstanceCreate(BaseModel):
     )
     create_user: bool = Field(default=True, description="Create your user on the instance")
 
-    # Automation options
     workflow_id: int | None = Field(default=None, description="Workflow ID")
     shutdown_days: int | None = Field(default=None, description="Shutdown days")
     expire_days: int | None = Field(default=None, description="Expiration days")
     create_backup: bool | None = Field(default=None, description="Create backups")
 
-    # Security
     security_groups: list[str] | None = Field(default=None, description="Security group names")
-
-    # Ports
     ports: list[dict[str, Any]] | None = Field(default=None, description="Exposed ports")
-
-    # Storage
     volumes: list[InstanceVolume] = Field(default_factory=list, description="Volumes to attach")
-
-    # Network
     network_interfaces: list[InstanceNetwork] = Field(
         default_factory=list,
         description="Network interfaces",
     )
-
-    # Additional options
     options: dict[str, Any] = Field(default_factory=dict, description="Additional options")
 
     def to_api_payload(self) -> dict[str, Any]:
@@ -380,45 +351,30 @@ class InstanceCreate(BaseModel):
 
         instance = payload["instance"]
 
-        # Description
         if self.description:
             instance["description"] = self.description
-
-        # Environment
         if self.environment:
             instance["instanceContext"] = self.environment
 
-        # Cloud
         instance["cloud"] = self.cloud
-
-        # Group/Site (use resolved group ID)
         instance["site"] = {"id": self.group_id}
-
-        # Instance type
         instance["type"] = self.type
         instance["instanceType"] = {"code": self.type}
-
-        # Layout
         instance["layout"] = {"id": self.layout}
-
-        # Plan
         instance["plan"] = {"id": self.plan}
 
-        # Labels
         if self.labels:
             instance["labels"] = self.labels
 
-        # Tags - normalize to list of {name, value} dicts
         if self.tags:
             if isinstance(self.tags, dict):
                 instance["tags"] = [{"name": k, "value": v} for k, v in self.tags.items()]
             else:
                 instance["tags"] = self.tags
 
-        # MTN Cloud config at root level
         config: dict[str, Any] = {}
-
         config["resourcePoolId"] = self.resource_pool_id
+
         if self.availability_zone is not None:
             config["availabilityZone"] = self.availability_zone
         if self.security_group is not None:
@@ -434,37 +390,29 @@ class InstanceCreate(BaseModel):
         if self.create_backup is not None:
             config["createBackup"] = self.create_backup
 
-        # Merge additional options into config
         if self.options:
             config.update(self.options)
 
         if config:
             payload["config"] = config
 
-        # Copies
         if self.copies != 1:
             payload["copies"] = self.copies
 
-        # Layout size
         payload["layoutSize"] = self.layout_size
 
-        # Workflow
         if self.workflow_id:
             payload["taskSetId"] = self.workflow_id
 
-        # Security groups
         if self.security_groups:
             payload["securityGroups"] = [{"id": sg} for sg in self.security_groups]
 
-        # Ports
         if self.ports:
             payload["ports"] = self.ports
 
-        # Volumes
         if self.volumes:
             payload["volumes"] = [v.model_dump(by_alias=True) for v in self.volumes]
 
-        # Networks
         if self.network_interfaces:
             payload["networkInterfaces"] = [n.to_api_payload() for n in self.network_interfaces]
 

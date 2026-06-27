@@ -20,11 +20,9 @@ class ServicePlan(Resource):
             print(f"{plan.name}: {plan.cores} cores, {plan.memory_gb}GB RAM")
     """
 
-    # Plan details
     description: str | None = Field(default=None)
     code: str | None = Field(default=None)
 
-    # Resources
     max_memory: int | None = Field(
         default=None,
         alias="maxMemory",
@@ -42,25 +40,19 @@ class ServicePlan(Resource):
     )
     cores_per_socket: int | None = Field(default=None, alias="coresPerSocket")
 
-    # Custom options
     custom_cores: bool = Field(default=False, alias="customCores")
     custom_max_storage: bool = Field(default=False, alias="customMaxStorage")
     custom_max_memory: bool = Field(default=False, alias="customMaxMemory")
 
-    # Pricing
     price_sets: list[dict[str, Any]] = Field(default_factory=list, alias="priceSets")
 
-    # Status
     active: bool = Field(default=True)
     deleted: bool = Field(default=False)
 
-    # Provisioning
     provision_type: dict[str, Any] | None = Field(default=None, alias="provisionType")
 
-    # Sorting
     sort_order: int | None = Field(default=None, alias="sortOrder")
 
-    # Config
     config: dict[str, Any] | None = Field(default=None)
 
     @property

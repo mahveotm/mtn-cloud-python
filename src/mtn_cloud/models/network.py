@@ -59,17 +59,14 @@ class Network(Resource):
         network = cloud.networks.get(123)
     """
 
-    # Network details
     display_name: str | None = Field(default=None, alias="displayName")
     labels: list[str] = Field(default_factory=list)
     description: str | None = Field(default=None, description="Network description")
     code: str | None = Field(default=None, description="Network code")
 
-    # Type
     type: ResourceReference | None = Field(default=None, description="Network type info")
     type_id: int | None = Field(default=None, alias="typeId")
 
-    # Configuration
     ipv4_enabled: bool | None = Field(default=None, alias="ipv4Enabled")
     ipv6_enabled: bool | None = Field(default=None, alias="ipv6Enabled")
     cidr: str | None = Field(default=None, description="CIDR block")
@@ -78,10 +75,8 @@ class Network(Resource):
     dns_secondary: str | None = Field(default=None, alias="dnsSecondary")
     switch_id: str | None = Field(default=None, alias="switchId")
 
-    # VLAN
     vlan_id: int | None = Field(default=None, alias="vlanId")
 
-    # Cloud/Zone
     zone: ResourceReference | None = Field(default=None, description="Zone/cloud info")
     group: ResourceReference | None = Field(default=None)
     owner: ResourceReference | None = Field(default=None)
@@ -90,7 +85,6 @@ class Network(Resource):
     network_domain: ResourceReference | None = Field(default=None, alias="networkDomain")
     network_proxy: ResourceReference | None = Field(default=None, alias="networkProxy")
 
-    # Status
     active: bool = Field(default=True, description="Whether network is active")
     visibility: str | None = Field(default=None, description="Network visibility")
     status: str | None = Field(default=None)
@@ -99,7 +93,6 @@ class Network(Resource):
     appliance_url_proxy_bypass: bool | None = Field(default=None, alias="applianceUrlProxyBypass")
     no_proxy: str | None = Field(default=None, alias="noProxy")
 
-    # DHCP
     dhcp_server: bool | None = Field(default=None, alias="dhcpServer")
     dhcp_server_ipv6: bool | None = Field(default=None, alias="dhcpServerIPv6")
     search_domains: str | None = Field(default=None, alias="searchDomains")
@@ -107,7 +100,6 @@ class Network(Resource):
     resource_permission: ResourcePermission | None = Field(default=None, alias="resourcePermission")
     config: dict[str, Any] | None = Field(default=None)
 
-    # External reference
     external_id: str | None = Field(default=None, alias="externalId")
 
     @property
@@ -148,10 +140,8 @@ class Subnet(Resource):
     network: ResourceReference | None = Field(default=None)
     type: ResourceReference | None = Field(default=None)
 
-    # Pool info
     pool: str | None = Field(default=None)
 
-    # DHCP
     dhcp_server: bool | None = Field(default=None, alias="dhcpServer")
     dhcp_ip: str | None = Field(default=None, alias="dhcpIp")
     dhcp_start: str | None = Field(default=None, alias="dhcpStart")

@@ -1,7 +1,6 @@
-"""
-Tests for Instance models and resource.
-"""
+"""Tests for instance models and resources."""
 
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -15,196 +14,267 @@ from mtn_cloud.models.instance import (
 )
 from mtn_cloud.resources.instances import InstancesResource
 
-from .conftest import SAMPLE_INSTANCE, SAMPLE_INSTANCES_LIST
+from .conftest import SAMPLE_INSTANCE, SAMPLE_INSTANCES_LIST, nested_value
+
+
+@pytest.fixture
+def resource(mock_http: MagicMock) -> InstancesResource:
+    """Return an instances resource backed by a mocked HTTP client."""
+    return InstancesResource(mock_http)
+
+
+@pytest.fixture
+def create_kwargs() -> dict[str, Any]:
+    """Return valid instance creation arguments."""
+    return {
+        "name": "MyInstanceName",
+        "cloud": "MTNNG_CLOUD_AZ_1",
+        "type": "MTN-CS10",
+        "group_id": 621,
+        "layout": 327,
+        "plan": 6923,
+        "resource_pool_id": "pool-214",
+    }
 
 
 class TestInstanceModel:
     """Tests for Instance model."""
 
-    def test_parse_instance(self):
-        """Test parsing instance from API response."""
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            ("id", 123),
+            ("name", "test-instance"),
+            ("status", "running"),
+            ("ip_address", "192.168.1.100"),
+        ],
+    )
+    def test_parse_instance_field(self, field: str, expected: Any) -> None:
+        """Parse API response fields."""
         instance = Instance.model_validate(SAMPLE_INSTANCE)
 
-        assert instance.id == 123
-        assert instance.name == "test-instance"
-        assert instance.status == "running"
-        assert instance.ip_address == "192.168.1.100"
+        assert getattr(instance, field) == expected
 
-    def test_instance_properties(self):
-        """Test instance computed properties."""
+    @pytest.mark.parametrize(
+        ("field", "expected"),
+        [
+            ("primary_ip", "192.168.1.100"),
+            ("is_running", True),
+            ("is_stopped", False),
+        ],
+    )
+    def test_running_instance_property(self, field: str, expected: Any) -> None:
+        """Expose computed properties for running instances."""
         instance = Instance.model_validate(SAMPLE_INSTANCE)
 
-        assert instance.primary_ip == "192.168.1.100"
-        assert instance.is_running is True
-        assert instance.is_stopped is False
+        assert getattr(instance, field) == expected
 
-    def test_instance_stopped(self):
-        """Test stopped instance properties."""
-        data = {**SAMPLE_INSTANCE, "status": "stopped"}
-        instance = Instance.model_validate(data)
+    @pytest.mark.parametrize(
+        ("status", "field", "expected"),
+        [
+            ("stopped", "is_running", False),
+            ("stopped", "is_stopped", True),
+            ("off", "is_stopped", True),
+        ],
+    )
+    def test_status_property(self, status: str, field: str, expected: bool) -> None:
+        """Expose status helpers for stopped variants."""
+        instance = Instance.model_validate({**SAMPLE_INSTANCE, "status": status})
 
-        assert instance.is_running is False
-        assert instance.is_stopped is True
+        assert getattr(instance, field) is expected
 
-    def test_instance_str(self):
-        """Test instance string representation."""
+    @pytest.mark.parametrize("expected", ["123", "test-instance"])
+    def test_instance_str_contains_identity(self, expected: str) -> None:
+        """Include stable identity fields in string output."""
         instance = Instance.model_validate(SAMPLE_INSTANCE)
-        assert "123" in str(instance)
-        assert "test-instance" in str(instance)
+
+        assert expected in str(instance)
 
 
 class TestInstanceCreate:
     """Tests for InstanceCreate model."""
 
-    def test_create_payload(self):
-        """Test converting create model to API payload for MTN Cloud."""
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            ("instance.name", "MyInstanceName"),
+            ("instance.cloud", "MTNNG_CLOUD_AZ_1"),
+            ("instance.type", "MTN-CS10"),
+            ("instance.instanceType.code", "MTN-CS10"),
+            ("instance.site.id", 621),
+            ("instance.layout.id", 327),
+            ("instance.plan.id", 6923),
+            ("config.resourcePoolId", "pool-214"),
+        ],
+    )
+    def test_create_payload_field(
+        self,
+        create_kwargs: dict[str, Any],
+        path: str,
+        expected: Any,
+    ) -> None:
+        """Build required create payload fields."""
+        payload = InstanceCreate(**create_kwargs).to_api_payload()
+
+        assert nested_value(payload, path) == expected
+
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            ("config.resourcePoolId", "pool-214"),
+            ("config.availabilityZone", "Lagos-AZ-1-fd1"),
+            ("config.securityGroup", "default"),
+            ("config.osExternalNetworkId", "public-network-01"),
+        ],
+    )
+    def test_create_payload_config_field(
+        self,
+        create_kwargs: dict[str, Any],
+        path: str,
+        expected: Any,
+    ) -> None:
+        """Build MTN Cloud provisioning config fields."""
         create = InstanceCreate(
-            name="MyInstanceName",
-            cloud="MTNNG_CLOUD_AZ_1",
-            type="MTN-CS10",
-            group_id=621,  # Group ID is resolved by the resource
-            layout=327,
-            plan=6923,
-            resource_pool_id="pool-214",
-        )
-
-        payload = create.to_api_payload()
-
-        assert payload["instance"]["name"] == "MyInstanceName"
-        assert payload["instance"]["cloud"] == "MTNNG_CLOUD_AZ_1"
-        assert payload["instance"]["type"] == "MTN-CS10"
-        assert payload["instance"]["instanceType"]["code"] == "MTN-CS10"
-        assert payload["instance"]["site"]["id"] == 621
-        assert payload["instance"]["layout"]["id"] == 327
-        assert payload["instance"]["plan"]["id"] == 6923
-        assert payload["config"]["resourcePoolId"] == "pool-214"
-
-    def test_create_with_mtn_cloud_config(self):
-        """Test create payload with MTN Cloud config options."""
-        create = InstanceCreate(
-            name="MyInstanceName",
-            cloud="MTNNG_CLOUD_AZ_1",
-            type="MTN-CS10",
-            group_id=621,
-            layout=327,
-            plan=6923,
-            resource_pool_id="pool-214",
+            **create_kwargs,
             availability_zone="Lagos-AZ-1-fd1",
             security_group="default",
             os_external_network_id="public-network-01",
         )
 
-        payload = create.to_api_payload()
+        assert nested_value(create.to_api_payload(), path) == expected
 
-        assert "config" in payload
-        assert payload["config"]["resourcePoolId"] == "pool-214"
-        assert payload["config"]["availabilityZone"] == "Lagos-AZ-1-fd1"
-        assert payload["config"]["securityGroup"] == "default"
-        assert payload["config"]["osExternalNetworkId"] == "public-network-01"
-
-    def test_create_with_volumes(self):
-        """Test create payload with volumes."""
-        volumes = [InstanceVolume(name="root", size=10, storage_type=11)]
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            ("volumes.0.name", "root"),
+            ("volumes.0.size", 10),
+            ("volumes.0.storageType", 11),
+        ],
+    )
+    def test_create_payload_volume_field(
+        self,
+        create_kwargs: dict[str, Any],
+        path: str,
+        expected: Any,
+    ) -> None:
+        """Build volume payload fields."""
         create = InstanceCreate(
-            name="MyInstanceName",
-            cloud="MTNNG_CLOUD_AZ_1",
-            type="MTN-CS10",
-            group_id=621,
-            layout=327,
-            plan=6923,
-            resource_pool_id="pool-214",
-            volumes=volumes,
+            **create_kwargs,
+            volumes=[InstanceVolume(name="root", size=10, storage_type=11)],
         )
 
-        payload = create.to_api_payload()
+        assert nested_value(create.to_api_payload(), path) == expected
 
-        assert "volumes" in payload
-        assert payload["volumes"][0]["name"] == "root"
-        assert payload["volumes"][0]["size"] == 10
-        assert payload["volumes"][0]["storageType"] == 11
-
-    def test_create_with_network_interfaces(self):
-        """Test create payload with network interfaces."""
-        networks = [InstanceNetwork(network_id="network-298", ip_address="192.168.100.40")]
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            ("networkInterfaces.0.network.id", "network-298"),
+            ("networkInterfaces.0.ipAddress", "192.168.100.40"),
+            ("networkInterfaces.0.ipMode", "static"),
+        ],
+    )
+    def test_create_payload_network_field(
+        self,
+        create_kwargs: dict[str, Any],
+        path: str,
+        expected: Any,
+    ) -> None:
+        """Build network interface payload fields."""
         create = InstanceCreate(
-            name="MyInstanceName",
-            cloud="MTNNG_CLOUD_AZ_1",
-            type="MTN-CS10",
-            group_id=621,
-            layout=327,
-            plan=6923,
-            resource_pool_id="pool-214",
-            network_interfaces=networks,
+            **create_kwargs,
+            network_interfaces=[
+                InstanceNetwork(network_id="network-298", ip_address="192.168.100.40")
+            ],
         )
 
-        payload = create.to_api_payload()
-
-        assert "networkInterfaces" in payload
-        assert payload["networkInterfaces"][0]["network"]["id"] == "network-298"
-        assert payload["networkInterfaces"][0]["ipAddress"] == "192.168.100.40"
+        assert nested_value(create.to_api_payload(), path) == expected
 
 
 class TestInstanceUpdate:
     """Tests for InstanceUpdate model."""
 
-    def test_update_payload(self):
-        """Test converting update model to API payload."""
-        update = InstanceUpdate(
-            name="updated-name",
-            description="Updated description",
-        )
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            ("instance.name", "updated-name"),
+            ("instance.description", "Updated description"),
+        ],
+    )
+    def test_update_payload_field(self, path: str, expected: str) -> None:
+        """Build update payload fields."""
+        update = InstanceUpdate(name="updated-name", description="Updated description")
 
-        payload = update.to_api_payload()
+        assert nested_value(update.to_api_payload(), path) == expected
 
-        assert payload["instance"]["name"] == "updated-name"
-        assert payload["instance"]["description"] == "Updated description"
-
-    def test_update_partial(self):
-        """Test partial update only includes set fields."""
-        update = InstanceUpdate(name="new-name")
-
-        payload = update.to_api_payload()
+    def test_update_partial_includes_set_field(self) -> None:
+        """Include provided update fields."""
+        payload = InstanceUpdate(name="new-name").to_api_payload()
 
         assert "name" in payload["instance"]
+
+    def test_update_partial_excludes_unset_field(self) -> None:
+        """Omit absent update fields."""
+        payload = InstanceUpdate(name="new-name").to_api_payload()
+
         assert "description" not in payload["instance"]
 
 
 class TestInstancesResource:
     """Tests for InstancesResource."""
 
-    def test_list_instances(self):
-        """Test listing instances."""
-        mock_http = MagicMock()
+    def test_list_instances_count(self, resource: InstancesResource, mock_http: MagicMock) -> None:
+        """Return all instances from the list endpoint."""
         mock_http.get.return_value = SAMPLE_INSTANCES_LIST
 
-        resource = InstancesResource(mock_http)
-        instances = resource.list()
+        assert len(resource.list()) == 2
 
-        assert len(instances) == 2
-        assert instances[0].name == "test-instance"
-        assert instances[1].name == "test-instance-2"
+    @pytest.mark.parametrize(("index", "expected"), [(0, "test-instance"), (1, "test-instance-2")])
+    def test_list_instance_name(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+        index: int,
+        expected: str,
+    ) -> None:
+        """Parse listed instance names."""
+        mock_http.get.return_value = SAMPLE_INSTANCES_LIST
+
+        assert resource.list()[index].name == expected
+
+    def test_list_uses_get(self, resource: InstancesResource, mock_http: MagicMock) -> None:
+        """Call the list endpoint once."""
+        mock_http.get.return_value = SAMPLE_INSTANCES_LIST
+
+        resource.list()
+
         mock_http.get.assert_called_once()
 
-    def test_get_instance(self):
-        """Test getting single instance."""
-        mock_http = MagicMock()
+    @pytest.mark.parametrize(("field", "expected"), [("id", 123), ("name", "test-instance")])
+    def test_get_instance_field(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+        field: str,
+        expected: Any,
+    ) -> None:
+        """Return parsed instance data from the get endpoint."""
         mock_http.get.return_value = {"instance": SAMPLE_INSTANCE}
 
-        resource = InstancesResource(mock_http)
-        instance = resource.get(123)
+        assert getattr(resource.get(123), field) == expected
 
-        assert instance.id == 123
-        assert instance.name == "test-instance"
+    def test_get_instance_path(self, resource: InstancesResource, mock_http: MagicMock) -> None:
+        """Call the expected get endpoint."""
+        mock_http.get.return_value = {"instance": SAMPLE_INSTANCE}
+
+        resource.get(123)
+
         mock_http.get.assert_called_with("/instances/123")
 
-    def test_create_instance(self):
-        """Test creating instance on MTN Cloud."""
-        mock_http = MagicMock()
+    def test_create_instance_name(self, resource: InstancesResource, mock_http: MagicMock) -> None:
+        """Return the created instance."""
         mock_http.post.return_value = {"instance": SAMPLE_INSTANCE}
-        # Mock the group lookup - groups endpoint returns the group
         mock_http.get.return_value = {"groups": [{"id": 621, "name": "MTNNG_CLOUD_AZ_1"}]}
 
-        resource = InstancesResource(mock_http)
         instance = resource.create(
             name="MyInstanceName",
             cloud="MTNNG_CLOUD_AZ_1",
@@ -219,149 +289,261 @@ class TestInstancesResource:
         )
 
         assert instance.name == "test-instance"
+
+    def test_create_instance_posts_once(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+    ) -> None:
+        """Post one create request."""
+        mock_http.post.return_value = {"instance": SAMPLE_INSTANCE}
+        mock_http.get.return_value = {"groups": [{"id": 621, "name": "MTNNG_CLOUD_AZ_1"}]}
+
+        resource.create(
+            name="MyInstanceName",
+            cloud="MTNNG_CLOUD_AZ_1",
+            type="MTN-CS10",
+            group="MTNNG_CLOUD_AZ_1",
+            layout=327,
+            plan=6923,
+            resource_pool_id="pool-214",
+        )
+
         mock_http.post.assert_called_once()
 
-    def test_delete_instance(self):
-        """Test deleting instance."""
-        mock_http = MagicMock()
+    def test_delete_instance_result(
+        self, resource: InstancesResource, mock_http: MagicMock
+    ) -> None:
+        """Return true when deletion succeeds."""
         mock_http.delete.return_value = {"success": True}
 
-        resource = InstancesResource(mock_http)
-        result = resource.delete(123)
+        assert resource.delete(123) is True
 
-        assert result is True
+    def test_delete_instance_uses_delete(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+    ) -> None:
+        """Call the delete endpoint."""
+        mock_http.delete.return_value = {"success": True}
+
+        resource.delete(123)
+
         mock_http.delete.assert_called_once()
 
-    def test_start_instance(self):
-        """Test starting instance."""
-        mock_http = MagicMock()
+    @pytest.mark.parametrize(
+        ("method_name", "path"),
+        [
+            ("start", "/instances/123/start"),
+            ("stop", "/instances/123/stop"),
+            ("restart", "/instances/123/restart"),
+        ],
+    )
+    def test_instance_action_path(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+        method_name: str,
+        path: str,
+    ) -> None:
+        """Call the expected action endpoint."""
         mock_http.put.return_value = {"success": True}
         mock_http.get.return_value = {"instance": SAMPLE_INSTANCE}
 
-        resource = InstancesResource(mock_http)
-        instance = resource.start(123)
+        getattr(resource, method_name)(123)
 
-        mock_http.put.assert_called_with("/instances/123/start")
-        assert instance.id == 123
+        mock_http.put.assert_called_with(path)
 
-    def test_stop_instance(self):
-        """Test stopping instance."""
-        mock_http = MagicMock()
-        mock_http.put.return_value = {"success": True}
-        mock_http.get.return_value = {"instance": {**SAMPLE_INSTANCE, "status": "stopped"}}
-
-        resource = InstancesResource(mock_http)
-        _instance = resource.stop(123)
-
-        mock_http.put.assert_called_with("/instances/123/stop")
-
-    def test_restart_instance(self):
-        """Test restarting instance."""
-        mock_http = MagicMock()
+    def test_start_instance_returns_refreshed_instance(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+    ) -> None:
+        """Return the refreshed instance after starting."""
         mock_http.put.return_value = {"success": True}
         mock_http.get.return_value = {"instance": SAMPLE_INSTANCE}
 
-        resource = InstancesResource(mock_http)
-        _instance = resource.restart(123)
+        assert resource.start(123).id == 123
 
-        mock_http.put.assert_called_with("/instances/123/restart")
-
-    def test_list_with_filters(self):
-        """Test listing instances with filters."""
-        mock_http = MagicMock()
+    @pytest.mark.parametrize(
+        ("filter_name", "filter_value", "param_name", "expected"),
+        [
+            ("status", "running", "status", "running"),
+            ("cloud_id", 1, "zoneId", 1),
+            ("group_id", 621, "siteId", 621),
+            ("labels", ["prod", "api"], "labels", "prod,api"),
+        ],
+    )
+    def test_list_filter_param(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+        filter_name: str,
+        filter_value: Any,
+        param_name: str,
+        expected: Any,
+    ) -> None:
+        """Translate resource filters to API query parameters."""
         mock_http.get.return_value = SAMPLE_INSTANCES_LIST
 
-        resource = InstancesResource(mock_http)
-        _instances = resource.list(status="running", cloud_id=1)
+        resource.list(**{filter_name: filter_value})
 
-        call_args = mock_http.get.call_args
-        params = call_args[1]["params"]
-        assert params["status"] == "running"
-        assert params["zoneId"] == 1
+        assert mock_http.get.call_args.kwargs["params"][param_name] == expected
 
-    def test_paginate_instances(self):
-        """Test page-by-page iteration using inherited paginate helper."""
-        mock_http = MagicMock()
-        page_1 = SAMPLE_INSTANCES_LIST
-        page_2 = {
-            "instances": [
-                {
-                    "id": 125,
-                    "name": "test-instance-3",
-                    "status": "running",
-                    "ipAddress": "192.168.1.102",
-                },
-                {
-                    "id": 126,
-                    "name": "test-instance-4",
-                    "status": "running",
-                    "ipAddress": "192.168.1.103",
-                },
-            ]
-        }
-        page_3 = {
-            "instances": [
-                {
-                    "id": 127,
-                    "name": "test-instance-5",
-                    "status": "stopped",
-                    "ipAddress": "192.168.1.104",
-                }
-            ]
-        }
+    def test_paginate_page_lengths(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+    ) -> None:
+        """Yield pages until a partial page is returned."""
+        self._mock_paginated_instances(mock_http)
 
-        def get_side_effect(path, params=None):
-            assert path == "/instances"
-            offset = (params or {}).get("offset", 0)
-            if offset == 0:
-                return page_1
-            if offset == 2:
-                return page_2
-            if offset == 4:
-                return page_3
-            return {"instances": []}
-
-        mock_http.get.side_effect = get_side_effect
-
-        resource = InstancesResource(mock_http)
         pages = list(resource.paginate(page_size=2))
 
         assert [len(page) for page in pages] == [2, 2, 1]
+
+    def test_paginate_first_item_ids(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+    ) -> None:
+        """Preserve item ordering across pages."""
+        self._mock_paginated_instances(mock_http)
+
+        pages = list(resource.paginate(page_size=2))
+
         assert [page[0].id for page in pages] == [123, 125, 127]
 
-        first_params = mock_http.get.call_args_list[0][1]["params"]
-        second_params = mock_http.get.call_args_list[1][1]["params"]
-        third_params = mock_http.get.call_args_list[2][1]["params"]
+    @pytest.mark.parametrize(
+        ("call_index", "param_name", "expected"),
+        [
+            (0, "max", 2),
+            (1, "offset", 2),
+            (2, "offset", 4),
+        ],
+    )
+    def test_paginate_request_param(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+        call_index: int,
+        param_name: str,
+        expected: int,
+    ) -> None:
+        """Send expected pagination parameters."""
+        self._mock_paginated_instances(mock_http)
 
-        assert first_params["max"] == 2
-        assert "offset" not in first_params
-        assert second_params["offset"] == 2
-        assert third_params["offset"] == 4
+        list(resource.paginate(page_size=2))
 
-    def test_iter_all_instances(self):
-        """Test flattened iteration using inherited iter_all helper."""
-        mock_http = MagicMock()
+        assert mock_http.get.call_args_list[call_index].kwargs["params"][param_name] == expected
+
+    def test_paginate_first_request_omits_offset(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+    ) -> None:
+        """Omit offset from the first pagination request."""
+        self._mock_paginated_instances(mock_http)
+
+        list(resource.paginate(page_size=2))
+
+        assert "offset" not in mock_http.get.call_args_list[0].kwargs["params"]
+
+    def test_iter_all_instances_count(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+    ) -> None:
+        """Flatten a page into individual instances."""
         mock_http.get.return_value = SAMPLE_INSTANCES_LIST
 
-        resource = InstancesResource(mock_http)
-        items = list(resource.iter_all(page_size=5, status="running", cloud_id=1))
+        assert len(list(resource.iter_all(page_size=5, status="running", cloud_id=1))) == 2
 
-        assert len(items) == 2
-        assert items[0].id == 123
-        assert items[1].id == 124
+    @pytest.mark.parametrize(("index", "expected"), [(0, 123), (1, 124)])
+    def test_iter_all_instance_id(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+        index: int,
+        expected: int,
+    ) -> None:
+        """Yield parsed instances from flattened iteration."""
+        mock_http.get.return_value = SAMPLE_INSTANCES_LIST
 
-        call_args = mock_http.get.call_args
-        params = call_args[1]["params"]
-        assert params["max"] == 5
-        assert params["status"] == "running"
-        assert params["zoneId"] == 1
+        assert list(resource.iter_all(page_size=5))[index].id == expected
 
-    def test_paginate_validation(self):
-        """Test paginate validates page size and offset values."""
+    @pytest.mark.parametrize(
+        ("param_name", "expected"),
+        [
+            ("max", 5),
+            ("status", "running"),
+            ("zoneId", 1),
+        ],
+    )
+    def test_iter_all_request_param(
+        self,
+        resource: InstancesResource,
+        mock_http: MagicMock,
+        param_name: str,
+        expected: Any,
+    ) -> None:
+        """Pass filters through flattened iteration."""
+        mock_http.get.return_value = SAMPLE_INSTANCES_LIST
+
+        list(resource.iter_all(page_size=5, status="running", cloud_id=1))
+
+        assert mock_http.get.call_args.kwargs["params"][param_name] == expected
+
+    @pytest.mark.parametrize(
+        ("kwargs", "message"),
+        [
+            ({"page_size": 0}, "page_size must be >= 1"),
+            ({"start_offset": -1}, "start_offset must be >= 0"),
+        ],
+    )
+    def test_paginate_validation(self, kwargs: dict[str, int], message: str) -> None:
+        """Validate pagination arguments."""
         resource = InstancesResource(MagicMock())
 
-        with pytest.raises(ValueError, match="page_size must be >= 1"):
-            list(resource.paginate(page_size=0))
+        with pytest.raises(ValueError, match=message):
+            list(resource.paginate(**kwargs))
 
-        with pytest.raises(ValueError, match="start_offset must be >= 0"):
-            list(resource.paginate(start_offset=-1))
+    @staticmethod
+    def _mock_paginated_instances(mock_http: MagicMock) -> None:
+        pages = {
+            0: SAMPLE_INSTANCES_LIST,
+            2: {
+                "instances": [
+                    {
+                        "id": 125,
+                        "name": "test-instance-3",
+                        "status": "running",
+                        "ipAddress": "192.168.1.102",
+                    },
+                    {
+                        "id": 126,
+                        "name": "test-instance-4",
+                        "status": "running",
+                        "ipAddress": "192.168.1.103",
+                    },
+                ]
+            },
+            4: {
+                "instances": [
+                    {
+                        "id": 127,
+                        "name": "test-instance-5",
+                        "status": "stopped",
+                        "ipAddress": "192.168.1.104",
+                    }
+                ]
+            },
+        }
+
+        def get_side_effect(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+            if path != "/instances":
+                raise AssertionError(f"Unexpected path: {path}")
+            offset = (params or {}).get("offset", 0)
+            return pages.get(offset, {"instances": []})
+
+        mock_http.get.side_effect = get_side_effect

@@ -47,38 +47,30 @@ class InstanceType(Resource):
             print(f"  Layout: {layout.id} - {layout.name}")
     """
 
-    # Basic info
     code: str = Field(..., description="Instance type code (e.g., 'MTN-CS10')")
     description: str | None = Field(default=None, description="Instance type description")
 
-    # Category
     category: str | None = Field(
         default=None, description="Category (e.g., 'os', 'sql', 'web', 'apps')"
     )
 
-    # Labels
     labels: List[str] = Field(default_factory=list, description="Labels/tags")
 
-    # Status
     active: bool = Field(default=True, description="Whether instance type is active")
     featured: bool = Field(default=False, description="Whether instance type is featured")
     visibility: str = Field(default="public", description="Visibility (public/private)")
 
-    # Provisioning
     provision_type_code: str | None = Field(alias="provisionTypeCode", default="openstack")
     environment_prefix: str | None = Field(alias="environmentPrefix", default=None)
 
-    # Versions
     versions: List[str] = Field(default_factory=list, description="Available versions")
 
-    # Layouts
     instance_type_layouts: List[InstanceTypeLayout] = Field(
         alias="instanceTypeLayouts",
         default_factory=list,
         description="Available layouts for this instance type",
     )
 
-    # Account
     account: dict[str, Any] | None = Field(default=None, description="Account info")
 
     def __str__(self) -> str:
