@@ -42,10 +42,11 @@ cloud.instance_types.get_by_code("MTN-CS10")
 ## Common Write Operations
 
 ```python
-# Discover the resource pool an instance will be hosted in
-pool = cloud.instances.get_resource_pool("my-project", group="MTNNG_CLOUD_AZ_1")
-
-cloud.instances.create(..., resource_pool_id=pool.code)
+# Guided: resolves layout, plan, and resource pool from names
+cloud.instances.provision(name="web-01", type="MTN-CS10",
+                          group="MTNNG_CLOUD_AZ_1", plan="G2S4", resource_pool="my-project")
+# Explicit: full control over each ID
+cloud.instances.create(..., resource_pool_id="pool-214")
 cloud.instances.update(instance_id=123, name="new-name")
 cloud.instances.delete(123)
 

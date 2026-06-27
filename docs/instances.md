@@ -106,14 +106,43 @@ If you already know the cloud and group IDs, pass them explicitly to skip the gr
 pools = cloud.instances.list_resource_pools(cloud_id=4, group_id=621)
 ```
 
-## Create an Instance
+## Provision an Instance (guided)
+
+`provision()` is the fastest way to create an instance: it takes the names you already know and resolves the numeric IDs for you — the layout from the type code, the plan from its name, and the resource pool from its name (or auto-selects it when the group has exactly one).
 
 ```python
-# Resolve the resource pool once, then use its code directly
-pool = cloud.instances.get_resource_pool(
-    "my-project-Marv-Osuolale",
-    group="MTNNG_CLOUD_AZ_1",
+instance = cloud.instances.provision(
+    name="app-server-01",
+    type="MTN-CS10",                    # type code -> resolves the layout
+    group="MTNNG_CLOUD_AZ_1",           # also used as the cloud/zone
+    plan="G2S4",                        # plan name (or pass a numeric plan ID)
+    resource_pool="my-project",         # pool name; omit if the group has one pool
+    availability_zone="Lagos-AZ-1-fd1",
+    security_group="default",
 )
+
+# wait=True by default, so the instance is already running here
+print(instance.id, instance.name, instance.status, instance.primary_ip)
+```
+
+If a name can't be resolved, the error tells you what's available (e.g. the valid plan names, or the pools to choose from). Set `wait=False` to return immediately, or `dry_run=True` to get the resolved config back without creating anything:
+
+```python
+config = cloud.instances.provision(
+    name="app-server-01", type="MTN-CS10", group="MTNNG_CLOUD_AZ_1",
+    plan="G2S4", resource_pool="my-project", dry_run=True,
+)
+# {"layout": 327, "plan": 6776, "resource_pool_id": "pool-214", ...}
+```
+
+Any extra keyword (labels, tags, volumes, network_interfaces, ports, …) passes straight through to `create()`.
+
+## Create an Instance (explicit)
+
+When you want full control over each ID, call `create()` directly. Resolve the inputs yourself first (see [Discover Required IDs](#discover-required-ids-and-codes)):
+
+```python
+pool = cloud.instances.get_resource_pool("my-project", group="MTNNG_CLOUD_AZ_1")
 
 instance = cloud.instances.create(
     name="app-server-01",
@@ -124,7 +153,7 @@ instance = cloud.instances.create(
     plan=6776,                          # use a plan ID from list_service_plans()
     resource_pool_id=pool.code,         # e.g. "pool-214" (or pass 214 directly)
     availability_zone="Lagos-AZ-1-fd1",
-    security_group="default",           # security group name from the console
+    security_group="default",
 )
 
 print(instance.id, instance.name, instance.status, instance.primary_ip)

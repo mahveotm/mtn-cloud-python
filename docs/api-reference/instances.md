@@ -61,6 +61,31 @@
     - common API exceptions
     - `NotFoundError` when `group` cannot be resolved
 
+### `provision(name: str, *, type: str, group: str, plan: str | int, resource_pool=None, cloud=None, availability_zone=None, security_group="default", wait=True, timeout=600, dry_run=False, **create_kwargs) -> Instance | dict`
+
+Guided wrapper over `create()` that resolves IDs from names.
+
+- Endpoint sequence:
+    - `GET /api/groups?name=<group>` (resolve group → `cloud_ids`)
+    - `GET /api/instance-types?code=<type>` (resolve `layout` via `default_layout_id`)
+    - `GET /api/instances/service-plans` (resolve `plan` name → ID, unless `plan` is an int)
+    - `GET /api/options/zonePools` (resolve/auto-select `resource_pool`, unless given as int)
+    - `POST /api/instances`, then polls `GET /api/instances/{id}` when `wait=True`
+- Parameters:
+    - `type`: instance type code; its `default_layout_id` becomes `layout`
+    - `group`: group name; also used as `cloud` unless `cloud` is given
+    - `plan`: plan name (resolved against the live list) or numeric ID
+    - `resource_pool`: pool name, code, or numeric ID. If omitted, the group's single pool is used; if it has several, a `ValidationError` lists them
+    - `cloud`: cloud/zone name; defaults to `group`
+    - `wait`: block until running (default `True`)
+    - `timeout`: max seconds to wait when `wait=True`
+    - `dry_run`: return the resolved config dict instead of creating
+    - `**create_kwargs`: forwarded to `create()` (labels, tags, volumes, network_interfaces, ports, …)
+- Returns: the created `Instance` (running if `wait=True`), or a config `dict` when `dry_run=True`
+- Raises:
+    - `NotFoundError` when the group or instance type can't be resolved
+    - `ValidationError` when the plan or resource pool can't be resolved
+
 ### `update(instance_id: int, name=None, description=None, labels=None) -> Instance`
 
 - Endpoint: `PUT /api/instances/{instance_id}`
