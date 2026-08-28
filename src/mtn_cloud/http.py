@@ -1,9 +1,14 @@
 """Low-level HTTP transport, authentication, and error mapping."""
 
 import logging
+import math
+from collections.abc import Mapping, Sequence
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Any, Literal
 
 import requests
+from pydantic import SecretStr
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -26,6 +31,52 @@ from mtn_cloud.exceptions import (
 logger = logging.getLogger("mtn_cloud.http")
 
 HTTPMethod = Literal["GET", "POST", "PUT", "PATCH", "DELETE"]
+SAFE_RETRY_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+REDACTED = "<redacted>"
+MAX_LOG_VALUE_LENGTH = 4_096
+
+_SENSITIVE_KEY_FRAGMENTS = (
+    "accesskey",
+    "accesstoken",
+    "apikey",
+    "authorization",
+    "cookie",
+    "credential",
+    "password",
+    "passwd",
+    "privatekey",
+    "secret",
+    "token",
+)
+
+
+def _is_sensitive_key(key: Any) -> bool:
+    """Return whether a mapping key conventionally contains secret material."""
+    normalized = "".join(character for character in str(key).lower() if character.isalnum())
+    return any(fragment in normalized for fragment in _SENSITIVE_KEY_FRAGMENTS)
+
+
+def _redact_sensitive(value: Any, *, known_secrets: Sequence[str] = ()) -> Any:
+    """Recursively redact secret fields and known secret values."""
+    if isinstance(value, SecretStr):
+        return REDACTED
+    if isinstance(value, Mapping):
+        return {
+            key: REDACTED
+            if _is_sensitive_key(key)
+            else _redact_sensitive(item, known_secrets=known_secrets)
+            for key, item in value.items()
+        }
+    if isinstance(value, list | tuple | set | frozenset):
+        return [_redact_sensitive(item, known_secrets=known_secrets) for item in value]
+    if isinstance(value, bytes):
+        return f"<bytes:{len(value)}>"
+    if isinstance(value, str):
+        redacted = value
+        for secret in sorted({secret for secret in known_secrets if secret}, key=len, reverse=True):
+            redacted = redacted.replace(secret, REDACTED)
+        return redacted
+    return value
 
 
 class HTTPClient:
@@ -53,7 +104,7 @@ class HTTPClient:
         self._token: str | None = None
 
         if config.token:
-            self._token = config.token
+            self._token = config.get_token_value()
 
     @property
     def session(self) -> requests.Session:
@@ -70,7 +121,7 @@ class HTTPClient:
             total=self.config.max_retries,
             backoff_factor=self.config.retry_delay,
             status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+            allowed_methods=SAFE_RETRY_METHODS,
             respect_retry_after_header=True,
             raise_on_status=False,
         )
@@ -119,7 +170,7 @@ class HTTPClient:
         }
         data = {
             "username": self.config.username,
-            "password": self.config.password,
+            "password": self.config.get_password_value(),
         }
 
         try:
@@ -131,19 +182,26 @@ class HTTPClient:
             )
 
             if response.status_code != 200:
-                response_payload: dict[str, Any] | None
-                try:
-                    response_payload = response.json() if response.text else None
-                except ValueError:
-                    response_payload = {"raw": response.text} if response.text else None
+                response_payload = self._parse_response_body(response)
+                safe_payload = self._redact(response_payload)
                 raise AuthenticationError(
-                    f"Authentication failed: {response.text}",
+                    self._extract_error_message(safe_payload),
                     status_code=response.status_code,
-                    response=response_payload,
+                    response=safe_payload,
                 )
 
-            result = response.json()
-            token: str = result["access_token"]
+            try:
+                result = response.json()
+                token = result["access_token"]
+                if not isinstance(token, str) or not token:
+                    raise ValueError("access_token must be a non-empty string")
+            except (KeyError, TypeError, ValueError) as exc:
+                safe_payload = self._redact(self._parse_response_body(response))
+                raise AuthenticationError(
+                    "Authentication response did not contain a valid access token.",
+                    status_code=response.status_code,
+                    response=safe_payload,
+                ) from exc
             self._token = token
 
             logger.debug("Successfully authenticated")
@@ -197,16 +255,18 @@ class HTTPClient:
         """
         url = self._build_url(path)
         request_headers = {**self._get_headers(), **(headers or {})}
-        request_timeout = timeout or self.config.timeout
+        request_timeout = timeout if timeout is not None else self.config.timeout
 
         if self.config.debug:
-            logger.debug(f"Request: {method} {url}")
+            logger.debug("Request: %s %s", method, url)
             if params:
-                logger.debug(f"Params: {params}")
+                logger.debug("Params: %s", self._format_for_log(params))
             if json:
-                logger.debug(f"JSON: {json}")
+                logger.debug("JSON: %s", self._format_for_log(json))
+            if data:
+                logger.debug("Data: %s", self._format_for_log(data))
             if files:
-                logger.debug(f"Files: {list(files.keys())}")
+                logger.debug("Multipart fields: %s", sorted(files))
 
         try:
             response = self.session.request(
@@ -253,27 +313,25 @@ class HTTPClient:
         """
         request_id = response.headers.get("X-Request-Id")
 
-        try:
-            body = response.json() if response.text else {}
-        except ValueError:
-            body = {"raw": response.text}
+        body = self._parse_response_body(response)
 
         if self.config.debug:
-            logger.debug(f"Response: {response.status_code}")
-            logger.debug(f"Body: {body}")
+            logger.debug("Response: %s", response.status_code)
+            logger.debug("Body: %s", self._format_for_log(body))
 
         if 200 <= response.status_code < 300:
             return body
 
-        error_message = self._extract_error_message(body)
+        safe_body = self._redact(body)
+        error_message = self._extract_error_message(safe_body)
         status_code = response.status_code
 
         if status_code == 400:
-            errors = body.get("errors", [])
+            errors = safe_body.get("errors", [])
             raise ValidationError(
                 message=error_message,
                 errors=errors,
-                response=body,
+                response=safe_body,
                 request_id=request_id,
             )
 
@@ -283,47 +341,49 @@ class HTTPClient:
             raise AuthenticationError(
                 message=error_message,
                 status_code=status_code,
-                response=body,
+                response=safe_body,
                 request_id=request_id,
             )
 
         if status_code == 403:
             raise ForbiddenError(
                 message=error_message,
-                response=body,
+                response=safe_body,
                 request_id=request_id,
             )
 
         if status_code == 404:
             raise NotFoundError(
                 message=error_message,
-                response=body,
+                response=safe_body,
                 request_id=request_id,
             )
 
         if status_code == 402:
             raise QuotaExceededError(
                 message=error_message,
-                quota_type=body.get("quotaType") or body.get("quota"),
-                current=(body.get("current") if isinstance(body.get("current"), int) else None),
-                limit=body.get("limit") if isinstance(body.get("limit"), int) else None,
-                response=body,
+                quota_type=safe_body.get("quotaType") or safe_body.get("quota"),
+                current=(
+                    safe_body.get("current") if isinstance(safe_body.get("current"), int) else None
+                ),
+                limit=(safe_body.get("limit") if isinstance(safe_body.get("limit"), int) else None),
+                response=safe_body,
                 request_id=request_id,
             )
 
         if status_code == 409:
             raise ResourceConflictError(
                 message=error_message,
-                response=body,
+                response=safe_body,
                 request_id=request_id,
             )
 
         if status_code == 429:
-            retry_after = response.headers.get("Retry-After")
+            retry_after = self._parse_retry_after(response.headers.get("Retry-After"))
             raise RateLimitError(
                 message=error_message,
-                retry_after=int(retry_after) if retry_after else None,
-                response=body,
+                retry_after=retry_after,
+                response=safe_body,
                 request_id=request_id,
             )
 
@@ -331,14 +391,14 @@ class HTTPClient:
             raise ServerError(
                 message=error_message,
                 status_code=status_code,
-                response=body,
+                response=safe_body,
                 request_id=request_id,
             )
 
         raise MTNCloudError(
             message=error_message,
             status_code=status_code,
-            response=body,
+            response=safe_body,
             request_id=request_id,
         )
 
@@ -371,6 +431,81 @@ class HTTPClient:
             return str(body)
 
         return "Unknown error"
+
+    def _known_secrets(self) -> tuple[str, ...]:
+        """Return configured secret values for value-based redaction."""
+        return tuple(
+            secret
+            for secret in (
+                self._token,
+                self.config.get_token_value(),
+                self.config.get_password_value(),
+            )
+            if secret
+        )
+
+    def _redact(self, value: Any) -> Any:
+        """Redact configured and conventionally named secrets."""
+        return _redact_sensitive(value, known_secrets=self._known_secrets())
+
+    def _format_for_log(self, value: Any) -> str:
+        """Return a bounded, redacted representation suitable for debug logs."""
+        formatted = repr(self._redact(value))
+        if len(formatted) <= MAX_LOG_VALUE_LENGTH:
+            return formatted
+        return f"{formatted[:MAX_LOG_VALUE_LENGTH]}... <truncated>"
+
+    def _parse_response_body(self, response: requests.Response) -> dict[str, Any]:
+        """Normalize JSON bodies and safely describe non-JSON API errors."""
+        if not response.text:
+            return {}
+
+        try:
+            parsed = response.json()
+        except ValueError:
+            if 200 <= response.status_code < 300:
+                return {"raw": response.text}
+
+            content_type = response.headers.get("Content-Type", "unknown content type")
+            return {
+                "message": (
+                    f"Non-JSON response from API (HTTP {response.status_code}, {content_type})"
+                ),
+                "contentType": content_type,
+                "contentLength": len(response.content),
+            }
+
+        if isinstance(parsed, dict):
+            return parsed
+        return {"data": parsed}
+
+    @staticmethod
+    def _parse_retry_after(
+        value: str | None,
+        *,
+        now: datetime | None = None,
+    ) -> int | None:
+        """Parse Retry-After delta-seconds or an HTTP date into whole seconds."""
+        if not value:
+            return None
+
+        normalized = value.strip()
+        try:
+            return max(0, int(normalized))
+        except ValueError:
+            pass
+
+        try:
+            retry_at = parsedate_to_datetime(normalized)
+        except (TypeError, ValueError, OverflowError):
+            return None
+
+        if retry_at.tzinfo is None:
+            retry_at = retry_at.replace(tzinfo=timezone.utc)
+        reference = now or datetime.now(timezone.utc)
+        if reference.tzinfo is None:
+            reference = reference.replace(tzinfo=timezone.utc)
+        return max(0, math.ceil((retry_at - reference).total_seconds()))
 
     # Convenience methods
     def get(
@@ -432,7 +567,7 @@ class HTTPClient:
         """
         url = self._build_url(path)
         request_headers = {**self._get_headers(), **(headers or {})}
-        request_timeout = timeout or self.config.timeout
+        request_timeout = timeout if timeout is not None else self.config.timeout
 
         try:
             response = self.session.request(

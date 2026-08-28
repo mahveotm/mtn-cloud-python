@@ -82,7 +82,7 @@ class MTNCloud:
         password: str | None = None,
         url: str | None = None,
         timeout: float | None = None,
-        verify_ssl: bool = True,
+        verify_ssl: bool | None = None,
         config: MTNCloudConfig | None = None,
     ) -> None:
         """
@@ -94,7 +94,8 @@ class MTNCloud:
             password: Password for authentication
             url: API base URL (default: https://console.cloud.mtn.ng)
             timeout: Request timeout in seconds
-            verify_ssl: Verify SSL certificates
+            verify_ssl: Verify SSL certificates. When omitted, configuration and
+                environment settings are respected.
             config: Full configuration object (overrides other args)
         """
         if config:
@@ -102,17 +103,17 @@ class MTNCloud:
         else:
             config_kwargs: dict[str, Any] = {}
 
-            if token:
+            if token is not None:
                 config_kwargs["token"] = token
-            if username:
+            if username is not None:
                 config_kwargs["username"] = username
-            if password:
+            if password is not None:
                 config_kwargs["password"] = password
-            if url:
+            if url is not None:
                 config_kwargs["url"] = url
-            if timeout:
+            if timeout is not None:
                 config_kwargs["timeout"] = timeout
-            if not verify_ssl:
+            if verify_ssl is not None:
                 config_kwargs["verify_ssl"] = verify_ssl
 
             self._config = MTNCloudConfig(**config_kwargs)

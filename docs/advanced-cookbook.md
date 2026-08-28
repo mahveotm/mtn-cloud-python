@@ -5,14 +5,16 @@ Production-friendly patterns for robust automation.
 ## Configure a Resilient Client
 
 ```python
-from mtn_cloud import MTNCloud
+from mtn_cloud import MTNCloud, MTNCloudConfig
 
-cloud = MTNCloud(
+config = MTNCloudConfig(
     token="your-api-token",
     timeout=45,
-    # Retry values are controlled through MTNCloudConfig defaults:
-    # max_retries=3, retry_delay=1.0
+    max_retries=3,
+    retry_delay=1.0,
+    user_agent="my-automation/1.0",
 )
+cloud = MTNCloud(config=config)
 ```
 
 Use environment variables for deployment:
@@ -23,6 +25,15 @@ export MTN_CLOUD_TIMEOUT="45"
 export MTN_CLOUD_MAX_RETRIES="5"
 export MTN_CLOUD_RETRY_DELAY="1.5"
 ```
+
+Retries apply only to safe reads (`GET`, `HEAD`, and `OPTIONS`). The SDK does
+not automatically retry provisioning, actions, updates, or deletes because a
+server or proxy error does not prove that a write was rejected before execution.
+
+`user_agent` adds an application identity after the SDK's required
+`mtn-cloud-python/<version>` prefix. Debug logging is bounded and recursively
+redacts tokens, passwords, access keys, secret keys, cookies, authorization
+values, and similar credential fields.
 
 ## Pattern: Idempotent "Get or Create"
 

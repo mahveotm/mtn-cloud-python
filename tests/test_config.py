@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from mtn_cloud.config import MTNCloudConfig
+from mtn_cloud.config import DEFAULT_USER_AGENT, MTNCloudConfig
 
 
 class TestMTNCloudConfig:
@@ -63,7 +63,8 @@ class TestMTNCloudConfig:
             max_retries=5,
         )
 
-        assert getattr(config, field) == expected
+        actual = config.get_token_value() if field == "token" else getattr(config, field)
+        assert actual == expected
 
     def test_url_trailing_slash_removed(self):
         """Test that trailing slash is removed from URL."""
@@ -107,7 +108,7 @@ class TestMTNCloudConfig:
         """Test loading token from environment variable."""
         with patch.dict(os.environ, {"MTN_CLOUD_TOKEN": "env-token"}):
             config = MTNCloudConfig()
-            assert config.token == "env-token"
+            assert config.get_token_value() == "env-token"
 
     def test_env_variable_url(self):
         """Test loading URL from environment variable."""
@@ -119,7 +120,7 @@ class TestMTNCloudConfig:
         """Test that explicit values override environment."""
         with patch.dict(os.environ, {"MTN_CLOUD_TOKEN": "env-token"}):
             config = MTNCloudConfig(token="explicit-token")
-            assert config.token == "explicit-token"
+            assert config.get_token_value() == "explicit-token"
 
     def test_timeout_accepts_valid_value(self):
         """Accept timeout values inside the supported range."""
@@ -143,3 +144,38 @@ class TestMTNCloudConfig:
         """Reject retry counts outside the supported range."""
         with pytest.raises(ValueError):
             MTNCloudConfig(max_retries=20)
+
+    def test_secrets_are_masked_in_repr_and_json(self):
+        """Do not expose credentials through common configuration serialization."""
+        config = MTNCloudConfig(token="token-value", password="password-value")
+
+        rendered = repr(config)
+        serialized = config.model_dump_json()
+
+        assert "token-value" not in rendered
+        assert "password-value" not in rendered
+        assert "token-value" not in serialized
+        assert "password-value" not in serialized
+        assert config.get_token_value() == "token-value"
+        assert config.get_password_value() == "password-value"
+
+    @pytest.mark.parametrize(
+        ("configured", "expected"),
+        [
+            (DEFAULT_USER_AGENT, DEFAULT_USER_AGENT),
+            ("my-automation/1.0", f"{DEFAULT_USER_AGENT} my-automation/1.0"),
+            (
+                f"{DEFAULT_USER_AGENT} my-automation/1.0",
+                f"{DEFAULT_USER_AGENT} my-automation/1.0",
+            ),
+        ],
+    )
+    def test_user_agent_preserves_sdk_identity(self, configured, expected):
+        """Keep the MTN-compatible SDK identity when callers add an app identity."""
+        assert MTNCloudConfig(user_agent=configured).user_agent == expected
+
+    @pytest.mark.parametrize("user_agent", ["", "   ", "valid\r\ninjected"])
+    def test_user_agent_rejects_invalid_values(self, user_agent):
+        """Reject empty values and header injection attempts."""
+        with pytest.raises(ValueError):
+            MTNCloudConfig(user_agent=user_agent)
