@@ -363,6 +363,8 @@ Environment variables:
 | `MTN_CLOUD_MAX_RETRIES` | Maximum retry attempts | `3` |
 | `MTN_CLOUD_RETRY_DELAY` | Retry backoff factor | `1.0` |
 | `MTN_CLOUD_VERIFY_SSL` | Enable SSL verification | `true` |
+| `MTN_CLOUD_USER_AGENT` | Application identity appended to the SDK user agent | - |
+| `MTN_CLOUD_DEBUG` | Enable bounded, secret-redacted HTTP debug logs | `false` |
 
 Programmatic configuration:
 
@@ -375,10 +377,20 @@ config = MTNCloudConfig(
     max_retries=5,
     retry_delay=1.5,
     verify_ssl=True,
+    user_agent="my-automation/1.0",  # appended after the required SDK identity
 )
 
 cloud = MTNCloud(config=config)
 ```
+
+Tokens and passwords are stored as masked Pydantic secret values, and debug
+logging recursively redacts credential-shaped fields. The transport retries
+transient failures only for safe read methods (`GET`, `HEAD`, and `OPTIONS`);
+create, update, action, and delete requests are never status-retried automatically.
+
+The default `mtn-cloud-python/<version>` user-agent prefix is required by the
+MTN Cloud API edge. A configured `user_agent` is treated as an application
+suffix so the SDK identity is preserved.
 
 ## Examples
 

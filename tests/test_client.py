@@ -53,7 +53,13 @@ class TestMTNCloudInit:
         """Build config from constructor arguments."""
         cloud = MTNCloud(**kwargs)
 
-        assert getattr(cloud.config, field) == expected
+        if field == "token":
+            actual = cloud.config.get_token_value()
+        elif field == "password":
+            actual = cloud.config.get_password_value()
+        else:
+            actual = getattr(cloud.config, field)
+        assert actual == expected
 
     @pytest.mark.parametrize(
         ("field", "expected"),
@@ -73,13 +79,40 @@ class TestMTNCloudInit:
 
         cloud = MTNCloud(config=config)
 
-        assert getattr(cloud.config, field) == expected
+        actual = (
+            cloud.config.get_token_value() if field == "token" else getattr(cloud.config, field)
+        )
+        assert actual == expected
 
     def test_default_url(self, patched_http_client: MagicMock) -> None:
         """Default to the MTN Cloud console URL."""
         cloud = MTNCloud(token="test")
 
         assert "console.cloud.mtn.ng" in cloud.config.url
+
+    def test_explicit_verify_ssl_true_overrides_environment(
+        self,
+        patched_http_client: MagicMock,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Honor an explicit secure setting even when the environment disables it."""
+        monkeypatch.setenv("MTN_CLOUD_VERIFY_SSL", "false")
+
+        cloud = MTNCloud(token="test", verify_ssl=True)
+
+        assert cloud.config.verify_ssl is True
+
+    def test_omitted_verify_ssl_uses_environment(
+        self,
+        patched_http_client: MagicMock,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Use settings precedence when the constructor argument is omitted."""
+        monkeypatch.setenv("MTN_CLOUD_VERIFY_SSL", "false")
+
+        cloud = MTNCloud(token="test")
+
+        assert cloud.config.verify_ssl is False
 
 
 class TestMTNCloudResources:

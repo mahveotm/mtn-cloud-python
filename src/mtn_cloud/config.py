@@ -1,6 +1,6 @@
 """Configuration models and defaults for the MTN Cloud SDK."""
 
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from mtn_cloud._version import __version__
@@ -32,7 +32,10 @@ class MTNCloudConfig(BaseSettings):
         MTN_CLOUD_URL: API base URL
         MTN_CLOUD_TIMEOUT: Request timeout in seconds
         MTN_CLOUD_MAX_RETRIES: Maximum retry attempts
+        MTN_CLOUD_RETRY_DELAY: Base retry backoff factor
         MTN_CLOUD_VERIFY_SSL: Enable/disable SSL verification
+        MTN_CLOUD_USER_AGENT: Application identity appended to the SDK user agent
+        MTN_CLOUD_DEBUG: Enable secret-redacted debug logging
     """
 
     model_config = SettingsConfigDict(
@@ -43,7 +46,7 @@ class MTNCloudConfig(BaseSettings):
         extra="ignore",
     )
 
-    token: str | None = Field(
+    token: SecretStr | None = Field(
         default=None,
         description="MTN Cloud API access token",
     )
@@ -53,7 +56,7 @@ class MTNCloudConfig(BaseSettings):
         description="MTN Cloud username (alternative to token)",
     )
 
-    password: str | None = Field(
+    password: SecretStr | None = Field(
         default=None,
         description="MTN Cloud password (use with username)",
     )
@@ -96,7 +99,7 @@ class MTNCloudConfig(BaseSettings):
 
     user_agent: str = Field(
         default=DEFAULT_USER_AGENT,
-        description="User-Agent header for API requests",
+        description="Application identity appended to the MTN-compatible SDK user agent",
     )
 
     debug: bool = Field(
@@ -110,6 +113,19 @@ class MTNCloudConfig(BaseSettings):
         """Ensure URL doesn't have trailing slash."""
         return v.rstrip("/")
 
+    @field_validator("user_agent")
+    @classmethod
+    def normalize_user_agent(cls, value: str) -> str:
+        """Preserve the SDK identity required by MTN's API edge."""
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("user_agent cannot be empty")
+        if "\r" in normalized or "\n" in normalized:
+            raise ValueError("user_agent cannot contain line breaks")
+        if DEFAULT_USER_AGENT in normalized:
+            return normalized
+        return f"{DEFAULT_USER_AGENT} {normalized}"
+
     @property
     def api_url(self) -> str:
         """Get the full API URL."""
@@ -120,6 +136,14 @@ class MTNCloudConfig(BaseSettings):
         """Check if any authentication credentials are configured."""
         return bool(self.token or (self.username and self.password))
 
+    def get_token_value(self) -> str | None:
+        """Return the token for the HTTP transport without exposing it in reprs."""
+        return self.token.get_secret_value() if self.token is not None else None
+
+    def get_password_value(self) -> str | None:
+        """Return the password for the authentication transport."""
+        return self.password.get_secret_value() if self.password is not None else None
+
     def get_auth_method(self) -> str:
         """Determine the authentication method to use."""
         if self.token:
@@ -127,7 +151,3 @@ class MTNCloudConfig(BaseSettings):
         elif self.username and self.password:
             return "credentials"
         return "none"
-
-
-# Shared default configuration for callers that want module-level settings.
-default_config = MTNCloudConfig()
