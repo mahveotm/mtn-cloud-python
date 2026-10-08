@@ -1,4 +1,4 @@
-"""Configuration models and defaults for the MTN Cloud SDK."""
+"""Configuration models and defaults for MTN Cloud SDK."""
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
