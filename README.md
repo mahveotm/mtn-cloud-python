@@ -420,6 +420,7 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 - [MTN Cloud Console](https://console.cloud.mtn.ng)
 - [MTN Cloud Guide](https://cloud.mtn.ng/documentation)
+- [MTN Cloud Pricing](https://cloud.mtn.ng/pricing/pricing-calculator)
 - [Morpheus API Documentation (supplementary)](https://apidocs.morpheusdata.com/)
 - [GitHub Repository](https://github.com/mahveotm/mtn-cloud-python)
 - [PyPI Package](https://pypi.org/project/mtn-cloud/)
