@@ -22,6 +22,9 @@ Tokens and passwords are stored as masked secret values. Use
 integration needs the underlying value; normal SDK usage never needs to reveal
 them.
 
+`cloud.routers` exposes router discovery, MTN router creation/deletion, and explicit
+readiness/deletion waits. See the [Routers API](./routers.md).
+
 The transport:
 
 - preserves the `mtn-cloud-python/<version>` user-agent identity required by the

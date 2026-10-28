@@ -451,3 +451,25 @@ class TestNetworksResource:
 
 def _call_data(call_args: Any) -> dict[str, Any]:
     return {"args": list(call_args.args), "kwargs": call_args.kwargs}
+
+
+def test_get_by_name_rejects_ambiguous_networks(mock_http: MagicMock) -> None:
+    mock_http.get.return_value = {
+        "networks": [
+            {"id": 1, "name": "app"},
+            {"id": 2, "name": "app"},
+        ]
+    }
+    with pytest.raises(ValueError, match="ambiguous"):
+        NetworksResource(mock_http).get_by_name("app", cloud_id=4)
+
+
+def test_get_by_name_uses_exact_match(mock_http: MagicMock) -> None:
+    mock_http.get.return_value = {
+        "networks": [
+            {"id": 1, "name": "app-other"},
+            {"id": 2, "name": "app"},
+        ]
+    }
+    assert NetworksResource(mock_http).get_by_name("app", cloud_id=4).id == 2
+    assert mock_http.get.call_args.kwargs["params"]["zoneId"] == 4

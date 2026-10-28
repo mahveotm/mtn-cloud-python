@@ -107,8 +107,16 @@ class NetworksResource(BaseResource[Network]):
 
         Raises:
             NotFoundError: If network not found
+            ValueError: If multiple networks have the exact name in the selected cloud
         """
-        networks = self.list(name=name, cloud_id=cloud_id, max_results=1)
+        networks = []
+        for network in self.iter_all(name=name, cloud_id=cloud_id):
+            if network.name == name:
+                networks.append(network)
+                if len(networks) > 1:
+                    raise ValueError(
+                        f"Network name '{name}' is ambiguous; use a unique name or get(id)."
+                    )
         if not networks:
             raise NotFoundError(
                 resource_type="Network",

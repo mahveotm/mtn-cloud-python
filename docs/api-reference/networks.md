@@ -19,12 +19,13 @@
 ### `get_by_name(name: str, cloud_id: int | None = None) -> Network`
 
 - Endpoint sequence:
-    - `GET /api/networks?name=<name>&max=1`
+    - `GET /api/networks?name=<name>&max=100`, paging to check for duplicate exact names
     - Adds `zoneId=<cloud_id>` when provided
 - Returns: `Network`
 - Raises:
     - common API exceptions
-    - `NotFoundError` when no match
+    - `NotFoundError` when no exact match
+    - `ValueError` when multiple exact names match in the selected cloud; use a unique name or `get(id)`
 
 ### `list_by_cloud(cloud_id: int) -> list[Network]`
 
@@ -118,5 +119,5 @@
 - Returns: `list[NetworkPoolIp]`
 - Raises: common API exceptions
 
-> **Note:** Standalone floating-IP endpoints (`/api/networks/floating-ips`) are restricted (HTTP 403) on MTN Cloud tenant accounts and are not exposed by the SDK. Assign external/public connectivity at provisioning time via the instance's `os_external_network_id` instead.
+> **Note:** Standalone floating-IP endpoints (`/api/networks/floating-ips`) are restricted (HTTP 403) on MTN Cloud tenant accounts and are not exposed by the SDK. Use an [MTN router](./routers.md) for a network gateway, or the instance's `os_external_network_id` for public connectivity during provisioning.
 
