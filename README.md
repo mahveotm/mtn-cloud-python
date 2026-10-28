@@ -23,11 +23,15 @@ Docs: [mtn-cloud-python](https://mahveotm.github.io/mtn-cloud-python/)
 
 ## Installation
 
+Supports Python 3.10–3.15. Python 3.14 and 3.15 are included in CI on Linux, macOS, and Windows.
+
 ```bash
 pip install mtn-cloud
 ```
 
 ## Documentation
+
+- [Changelog](CHANGELOG.md)
 
 - [Docs Index](https://mahveotm.github.io/mtn-cloud-python/)
 - [Quickstart](https://mahveotm.github.io/mtn-cloud-python/quickstart/)
