@@ -451,3 +451,50 @@ class TestNetworksResource:
 
 def _call_data(call_args: Any) -> dict[str, Any]:
     return {"args": list(call_args.args), "kwargs": call_args.kwargs}
+
+
+def test_get_by_name_rejects_ambiguous_networks(mock_http: MagicMock) -> None:
+    mock_http.get.return_value = {
+        "networks": [
+            {"id": 1, "name": "app"},
+            {"id": 2, "name": "app"},
+        ]
+    }
+    with pytest.raises(ValueError, match="ambiguous"):
+        NetworksResource(mock_http).get_by_name("app", cloud_id=4)
+
+
+def test_get_by_name_uses_exact_match(mock_http: MagicMock) -> None:
+    mock_http.get.return_value = {
+        "networks": [
+            {"id": 1, "name": "app-other"},
+            {"id": 2, "name": "app"},
+        ]
+    }
+    assert NetworksResource(mock_http).get_by_name("app", cloud_id=4).id == 2
+    assert mock_http.get.call_args.kwargs["params"]["zoneId"] == 4
+
+
+def test_get_by_name_rejects_ambiguity_across_pages(mock_http: MagicMock) -> None:
+    first_page = [{"id": 1, "name": "app"}] + [
+        {"id": network_id, "name": f"app-{network_id}"} for network_id in range(2, 101)
+    ]
+    mock_http.get.side_effect = [
+        {"networks": first_page},
+        {"networks": [{"id": 101, "name": "app"}]},
+    ]
+
+    with pytest.raises(ValueError, match="ambiguous"):
+        NetworksResource(mock_http).get_by_name("app", cloud_id=4)
+
+    assert mock_http.get.call_count == 2
+    first_request, second_request = mock_http.get.call_args_list
+    assert first_request.args == ("/networks",)
+    assert first_request.kwargs["params"] == {"max": 100, "name": "app", "zoneId": 4}
+    assert second_request.args == ("/networks",)
+    assert second_request.kwargs["params"] == {
+        "max": 100,
+        "offset": 100,
+        "name": "app",
+        "zoneId": 4,
+    }

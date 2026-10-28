@@ -8,6 +8,7 @@ This section documents the public SDK surface in endpoint-first format.
 - [Instances (`cloud.instances`)](./instances.md)
 - [Instance Types (`cloud.instance_types`)](./instance-types.md)
 - [Networks (`cloud.networks`)](./networks.md)
+- [Routers (`cloud.routers`)](./routers.md)
 - [Clouds (`cloud.clouds`)](./clouds.md)
 - [Groups (`cloud.groups`)](./groups.md)
 - [Plans (`cloud.plans`)](./plans.md)

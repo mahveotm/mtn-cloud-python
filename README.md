@@ -188,6 +188,12 @@ subnets = cloud.networks.list_subnets(new_network.id)
 print(f"Subnets: {len(subnets)}")
 ```
 
+Create routers with existing public networks and internal subnets using
+`cloud.routers.create(...)`, then confirm provisioning with
+`cloud.routers.wait_until_ready(router.id)`. See the
+[Networking guide](docs/networking.md#create-an-mtn-router) and
+[router example](examples/create_router.py) for resource discovery and cleanup.
+
 ### 5. Manage Security Groups
 
 ```python
@@ -316,7 +322,6 @@ Storage vs archive model:
 - `cloud.storage_buckets`: provider configuration (endpoint, credentials, backing bucket)
 - `cloud.archive_buckets`: logical file container attached to a provider
 - file operations happen through archive APIs
-
 
 ## Error Handling
 

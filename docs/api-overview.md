@@ -14,6 +14,7 @@ from mtn_cloud import MTNCloud
 - `instances`
 - `instance_types`
 - `networks`
+- `routers`
 - `clouds`
 - `groups`
 - `plans`

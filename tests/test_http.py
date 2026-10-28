@@ -261,7 +261,12 @@ class TestResponseHandling:
         client, _ = client_with_response(
             response(
                 402,
-                {"message": "quota exceeded", "quotaType": "instances", "current": 5, "limit": 5},
+                {
+                    "message": "quota exceeded",
+                    "quotaType": "instances",
+                    "current": 5,
+                    "limit": 5,
+                },
             )
         )
 

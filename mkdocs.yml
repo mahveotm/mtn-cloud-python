@@ -63,6 +63,7 @@ nav:
       - Instances: api-reference/instances.md
       - Instance Types: api-reference/instance-types.md
       - Networks: api-reference/networks.md
+      - Routers: api-reference/routers.md
       - Clouds: api-reference/clouds.md
       - Groups: api-reference/groups.md
       - Plans: api-reference/plans.md

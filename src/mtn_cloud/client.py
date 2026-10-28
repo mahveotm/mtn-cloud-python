@@ -13,6 +13,7 @@ from mtn_cloud.resources.instance_types import InstanceTypesResource
 from mtn_cloud.resources.instances import InstancesResource
 from mtn_cloud.resources.networks import NetworksResource
 from mtn_cloud.resources.plans import PlansResource
+from mtn_cloud.resources.routers import RoutersResource
 from mtn_cloud.resources.security_groups import SecurityGroupsResource
 from mtn_cloud.resources.storage_buckets import StorageBucketsResource
 from mtn_cloud.resources.virtual_images import VirtualImagesResource
@@ -60,6 +61,7 @@ class MTNCloud:
         instances: Manage compute instances
         instance_types: Discover available instance types
         networks: Manage networks
+        routers: Manage MTN routers
         clouds: Manage clouds/zones
         groups: Manage groups (sites)
         plans: Manage service plans
@@ -123,6 +125,7 @@ class MTNCloud:
         self._instances: InstancesResource | None = None
         self._instance_types: InstanceTypesResource | None = None
         self._networks: NetworksResource | None = None
+        self._routers: RoutersResource | None = None
         self._clouds: CloudsResource | None = None
         self._groups: GroupsResource | None = None
         self._plans: PlansResource | None = None
@@ -189,6 +192,13 @@ class MTNCloud:
         if self._networks is None:
             self._networks = NetworksResource(self._http)
         return self._networks
+
+    @property
+    def routers(self) -> RoutersResource:
+        """Access MTN router discovery, creation, deletion, and readiness checks."""
+        if self._routers is None:
+            self._routers = RoutersResource(self._http)
+        return self._routers
 
     @property
     def groups(self) -> GroupsResource:

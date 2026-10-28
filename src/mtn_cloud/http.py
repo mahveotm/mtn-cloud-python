@@ -62,9 +62,11 @@ def _redact_sensitive(value: Any, *, known_secrets: Sequence[str] = ()) -> Any:
         return REDACTED
     if isinstance(value, Mapping):
         return {
-            key: REDACTED
-            if _is_sensitive_key(key)
-            else _redact_sensitive(item, known_secrets=known_secrets)
+            key: (
+                REDACTED
+                if _is_sensitive_key(key)
+                else _redact_sensitive(item, known_secrets=known_secrets)
+            )
             for key, item in value.items()
         }
     if isinstance(value, list | tuple | set | frozenset):
