@@ -70,11 +70,15 @@ print("type:", itype.code, "layout:", itype.default_layout_id)
 for pool in cloud.instances.list_resource_pools(group="MTNNG_CLOUD_AZ_1"):
     print("pool:", pool.code, pool.name)
 
+# Select the project whose plans you need.
+pool = cloud.instances.get_resource_pool("my-project", group=group.name)
+
 # 4. Service plans — available CPU/memory/storage tiers for this zone + layout
 for plan in cloud.instances.list_service_plans(
     zone_id=cloud_id,
     layout_id=itype.default_layout_id,
     group_id=group.id,
+    resource_pool_id=pool.code,
 ):
     print("plan:", plan["id"], plan["name"])
 ```
@@ -160,6 +164,21 @@ print(instance.id, instance.name, instance.status, instance.primary_ip)
 ```
 
 ## Operate an Instance
+
+After provisioning, fetch the latest addresses:
+
+```python
+instance = cloud.instances.wait_until_running(instance.id)
+print(instance.ip_address)   # private IP
+print(instance.external_ip)  # floating IP, or None when not assigned
+```
+
+When top-level IP fields are missing, the SDK uses the first VM in the API's
+`containerDetails`: `internalIp` for the private address and `server.externalIp`
+for the floating address. Explicit top-level values take precedence. This adds no
+HTTP requests; list responses without embedded details may still omit addresses,
+so use `get()` or `refresh()` for details. `primary_ip` prefers the private address.
+For multi-VM instances, these singular fields describe the first VM only.
 
 ```python
 instance = cloud.instances.get(instance.id)

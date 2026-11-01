@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from mtn_cloud.models.base import BaseModel, Resource
 
@@ -187,6 +187,27 @@ class Instance(Resource):
 
     # Bound by resource managers so model instances can expose convenience actions.
     _resource: Optional["InstancesResource"] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _resolve_network_addresses(cls, data: Any) -> Any:
+        """Fill missing addresses from the first embedded VM's details."""
+        if not isinstance(data, dict):
+            return data
+        details = data.get("containerDetails")
+        if not isinstance(details, list) or not details or not isinstance(details[0], dict):
+            return data
+        container = details[0]
+        server = container.get("server")
+        server = server if isinstance(server, dict) else {}
+        # Work on a copy: parsing must not change the caller's API response.
+        data = dict(data)
+        if not (data.get("ipAddress") or data.get("ip_address")):
+            data["ipAddress"] = container.get("internalIp") or server.get("internalIp")
+        if not (data.get("externalIp") or data.get("external_ip")):
+            # Container `ip` / connectionInfo may be private when no floating IP exists.
+            data["externalIp"] = server.get("externalIp")
+        return data
 
     def _set_resource(self, resource: "InstancesResource") -> None:
         """Set the resource manager for action methods."""

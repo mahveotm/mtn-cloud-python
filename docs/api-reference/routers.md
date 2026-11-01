@@ -3,6 +3,27 @@
 Access via `cloud.routers`. List and get inspect router records. Creation and
 deletion support only MTN's `neutronRouter` type; the type is resolved automatically.
 
+### `list_external_networks(*, group: str | int, resource_pool: str | int, cloud_id: int | None = None) -> list[ExternalNetwork]`
+
+- Endpoint: `GET /api/options/openstackExternalNetworks`, after group, pool, and
+  MTN router-type resolution.
+- Parameters:
+    - `group`: group name or numeric ID.
+    - `resource_pool`: project name, code, or numeric ID, scoped to the selected group and cloud.
+    - `cloud_id`: optional cloud ID; inferred only if the group has exactly one cloud.
+- Returns: gateway options with `name` and numeric Morpheus `id`. These IDs may
+  not be readable through the ordinary networks endpoint. An empty list means
+  no gateways are available in the selected scope.
+- Raises: `NotFoundError` for a missing group/pool, `ValueError` for ambiguous or
+  invalid scope, and common API exceptions.
+
+### `get_external_network(name: str, *, group: str | int, resource_pool: str | int, cloud_id: int | None = None) -> ExternalNetwork`
+
+- Uses the same scoped discovery as `list_external_networks()`.
+- Returns: one exact-name match, with an `id` suitable for `create(external_network_id=...)`.
+- Raises: `NotFoundError` with available names if no match exists, `ValueError`
+  if the name is empty or ambiguous, and the same scope/API errors as listing.
+
 ### `list(max_results=None, offset=0, sort=None, direction=None, phrase=None, **filters) -> list[Router]`
 
 - Endpoint: `GET /api/networks/routers`
@@ -27,7 +48,7 @@ deletion support only MTN's `neutronRouter` type; the type is resolved automatic
     - `resource_pool_id`: numeric project ID from `instances.get_resource_pool(...).id`.
     - `internal_subnet_ids`: nonempty list of positive Morpheus subnet IDs from
       `networks.list_subnets(...)`. Subnets must belong to the selected project.
-    - `external_network_id`: optional public network ID from `networks.get_by_name(...).id`.
+    - `external_network_id`: optional public network ID from `routers.get_external_network(...).id`.
     - `enabled`: whether the router is enabled; defaults to `True`.
 - Returns: initial `Router` record. Provisioning may still be in progress.
 - Raises: Pydantic `ValidationError` for invalid inputs; `ValueError` when the MTN

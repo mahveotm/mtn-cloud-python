@@ -20,6 +20,7 @@ itype = cloud.instance_types.get_by_code("MTN-CS10")
 pool = cloud.instances.get_resource_pool("my-project", group=group.name)
 plans = cloud.instances.list_service_plans(
     zone_id=group.cloud_ids[0], layout_id=itype.default_layout_id, group_id=group.id,
+    resource_pool_id=pool.code,
 )
 
 sg = cloud.security_groups.create(name="linux-ssh", description="SSH access")

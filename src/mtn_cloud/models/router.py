@@ -10,6 +10,13 @@ from mtn_cloud.models.network import ResourceReference
 PositiveID = Annotated[int, Field(gt=0, strict=True)]
 
 
+class ExternalNetwork(BaseModel):
+    """An available router gateway; its option value is a Morpheus network ID."""
+
+    id: PositiveID = Field(alias="value")
+    name: str = Field(min_length=1)
+
+
 class RouterInterface(BaseModel):
     """An internal network attached to a router."""
 

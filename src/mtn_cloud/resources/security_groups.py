@@ -218,7 +218,8 @@ class SecurityGroupsResource(BaseResource[SecurityGroup]):
             direction: Traffic direction (`ingress` or `egress`)
             policy: Action (`accept` or `deny`)
             protocol: IP protocol (`tcp`, `udp`, `icmp`, `any`)
-            port_range: Source port or range (e.g. `"22"`, `"8000-9000"`)
+            port_range: Source port or range (e.g. `"22"`, `"8000-9000"`).
+                MTN requires this field for TCP rules even when destination_port_range is set.
             destination_port_range: Destination port or range
             source_type: Source type (`cidr`, `group`, `instance`, `all`)
             source: Source CIDR or reference (required when source_type is `cidr`)

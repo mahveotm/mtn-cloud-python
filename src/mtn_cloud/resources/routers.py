@@ -6,8 +6,10 @@ import time
 from typing import Any
 
 from mtn_cloud.exceptions import MTNCloudError, NotFoundError, TimeoutError
-from mtn_cloud.models.router import Router, RouterCreate
+from mtn_cloud.models.router import ExternalNetwork, Router, RouterCreate
 from mtn_cloud.resources.base import BaseResource
+from mtn_cloud.resources.groups import GroupsResource
+from mtn_cloud.resources.instances import InstancesResource
 
 
 class RoutersResource(BaseResource[Router]):
@@ -42,6 +44,108 @@ class RoutersResource(BaseResource[Router]):
         ):
             raise ValueError("The MTN neutronRouter type is not available for creation.")
         return type_id
+
+    def _external_network_scope(
+        self, group: str | int, resource_pool: str | int, cloud_id: int | None
+    ) -> tuple[int, int, str]:
+        groups = GroupsResource(self._http)
+        if isinstance(group, int) and not isinstance(group, bool) and group > 0:
+            selected = groups.get(group)
+        elif isinstance(group, str) and group.strip():
+            matches = [g for g in groups.iter_all(name=group) if g.name == group]
+            if not matches:
+                raise NotFoundError(resource_type="Group", resource_id=group)
+            if len(matches) > 1:
+                raise ValueError(f"Group name {group!r} is ambiguous; pass its numeric ID.")
+            selected = matches[0]
+        else:
+            raise ValueError("group must be a nonempty name or positive numeric ID.")
+        if cloud_id is None:
+            if len(selected.cloud_ids) != 1:
+                raise ValueError(
+                    f"Group {selected.name!r} has {len(selected.cloud_ids)} clouds; set cloud_id explicitly."
+                )
+            cloud_id = selected.cloud_ids[0]
+        if type(cloud_id) is not int or cloud_id <= 0 or cloud_id not in selected.cloud_ids:
+            raise ValueError(f"Cloud {cloud_id!r} is not attached to group {selected.name!r}.")
+        if isinstance(resource_pool, bool) or not isinstance(resource_pool, str | int):
+            raise ValueError("resource_pool must be a name, code, or positive numeric ID.")
+        pools = InstancesResource(self._http).list_resource_pools(
+            cloud_id=cloud_id, group_id=selected.id
+        )
+        matches_pool = [
+            p
+            for p in pools
+            if (isinstance(resource_pool, int) and p.id == resource_pool)
+            or (isinstance(resource_pool, str) and resource_pool in (p.name, p.code))
+        ]
+        if not matches_pool:
+            raise NotFoundError(
+                resource_type="ResourcePool",
+                resource_id=resource_pool,
+                message=f"Resource pool {resource_pool!r} is not available in group {selected.name!r}, cloud {cloud_id}.",
+            )
+        if len(matches_pool) > 1:
+            raise ValueError(
+                f"Resource pool {resource_pool!r} is ambiguous; use its code or numeric ID."
+            )
+        if not matches_pool[0].code:
+            raise ValueError("Selected resource pool has no API option code.")
+        return selected.id, cloud_id, matches_pool[0].code
+
+    def list_external_networks(
+        self, *, group: str | int, resource_pool: str | int, cloud_id: int | None = None
+    ) -> list[ExternalNetwork]:
+        """List router gateways scoped to a group, cloud, and resource pool.
+
+        group accepts a name or numeric ID; resource_pool accepts a name, code,
+        or numeric ID. Infer the cloud only when the group has exactly one.
+        Returned IDs are Morpheus option values, not OpenStack UUIDs. These
+        networks may be unavailable through the ordinary networks endpoint.
+        """
+        group_id, zone_id, pool_code = self._external_network_scope(group, resource_pool, cloud_id)
+        response = self._http.get(
+            "/options/openstackExternalNetworks",
+            params={
+                "router.zone.id": zone_id,
+                "router.site.id": group_id,
+                "router.poolId": pool_code,
+                "routerType.id": self._type_id(),
+            },
+        )
+        if response.get("success") is False:
+            raise MTNCloudError("External-network discovery failed.", response=response)
+        if not isinstance(response.get("data"), list):
+            raise MTNCloudError("External-network response is missing its options list.")
+        return [ExternalNetwork.model_validate(item) for item in response["data"]]
+
+    def get_external_network(
+        self,
+        name: str,
+        *,
+        group: str | int,
+        resource_pool: str | int,
+        cloud_id: int | None = None,
+    ) -> ExternalNetwork:
+        """Resolve one exact gateway name; reject missing or ambiguous matches."""
+        if not name.strip():
+            raise ValueError("External network name must not be empty.")
+        networks = self.list_external_networks(
+            group=group, resource_pool=resource_pool, cloud_id=cloud_id
+        )
+        matches = [network for network in networks if network.name == name]
+        if len(matches) > 1:
+            raise ValueError(
+                f"External network {name!r} is ambiguous; list the options and select an ID explicitly."
+            )
+        if not matches:
+            available = ", ".join(network.name for network in networks)
+            raise NotFoundError(
+                resource_type="ExternalNetwork",
+                resource_id=name,
+                message=f"External network {name!r} is unavailable in the selected scope. Available names: {available}.",
+            )
+        return matches[0]
 
     def create(
         self,

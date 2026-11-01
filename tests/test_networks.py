@@ -498,3 +498,16 @@ def test_get_by_name_rejects_ambiguity_across_pages(mock_http: MagicMock) -> Non
         "name": "app",
         "zoneId": 4,
     }
+
+
+def test_list_subnets_rejects_unrelated_networks(mock_http: MagicMock) -> None:
+    from mtn_cloud.exceptions import MTNCloudError
+
+    mock_http.get.return_value = {
+        "subnets": [
+            SAMPLE_SUBNET,
+            {"id": 999, "cidr": "10.0.0.0/24", "network": {"id": 999}},
+        ]
+    }
+    with pytest.raises(MTNCloudError, match="matching parent network"):
+        NetworksResource(mock_http).list_subnets(298)

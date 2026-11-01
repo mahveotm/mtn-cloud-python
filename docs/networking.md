@@ -76,62 +76,78 @@ print(f"Subnets: {len(subnets)}")
 cloud.networks.delete(new_network.id)
 ```
 
-## Create an MTN Router
+## Discover External Networks
 
-Use an existing resource pool, a public network, and an internal network in that
-pool. Discover their IDs instead of copying them from the console. Resource pools
-(projects) are distinct from the network IP pools described below.
+Router gateway choices use MTN's scoped options endpoint. Public gateways may
+not be visible through `cloud.networks.list()` or `get_by_name()`.
 
 ```python
 from mtn_cloud import MTNCloud
 
 with MTNCloud() as cloud:  # Reads MTN_CLOUD_TOKEN
-    group = cloud.groups.get_by_name("MTNNG_CLOUD_AZ_1")
-    if len(group.cloud_ids) != 1:
-        raise ValueError("Select a cloud explicitly for this group.")
-    cloud_id = group.cloud_ids[0]
+    for network in cloud.routers.list_external_networks(
+        group="MTNNG_CLOUD_AZ_1", resource_pool="my-project"
+    ):
+        print(network.name, network.id)
 
-    pool = cloud.instances.get_resource_pool(
-        "my-project", group_id=group.id, cloud_id=cloud_id
+    public = cloud.routers.get_external_network(
+        "public-network-01",
+        group="MTNNG_CLOUD_AZ_1",
+        resource_pool="my-project",
     )
-    public = cloud.networks.get_by_name("public-network-01", cloud_id=cloud_id)
-    internal = cloud.networks.get_by_name("app-net", cloud_id=cloud_id)
-    internal = cloud.networks.get(internal.id)
-    if internal.zone_pool is None or internal.zone_pool.id != pool.id:
-        raise ValueError("The internal network must belong to the selected resource pool.")
-    subnets = cloud.networks.list_subnets(internal.id)
-
-    router = cloud.routers.create(
-        name="app-router",
-        group_id=group.id,
-        cloud_id=cloud_id,
-        resource_pool_id=pool.id,
-        external_network_id=public.id,
-        internal_subnet_ids=[subnet.id for subnet in subnets],
-    )
-    print("Submitted router:", router.id)
-    router = cloud.routers.wait_until_ready(router.id)
-    print(router.id, router.status, router.external_ip)
-
-    # When no longer needed:
-    # cloud.routers.delete(router.id)
-    # cloud.routers.wait_until_deleted(router.id)
+    print(public.id)
 ```
 
-This attaches all subnets returned for the internal network. To attach only one,
-select it explicitly by name or CIDR. The IDs must be Morpheus subnet IDs, not
-network IDs or OpenStack UUIDs. At least one subnet is required.
+The SDK resolves the group, resource pool code, and MTN router type internally.
+The cloud is inferred only when the group has exactly one; otherwise pass
+`cloud_id` explicitly. IDs are Morpheus network IDs, not OpenStack UUIDs.
+A named lookup rejects missing and ambiguous matches.
+
+## Create an MTN Router
+
+The runnable `examples/create_router.py` script discovers the public gateway and
+internal subnet IDs, creates a router, waits for readiness, and reads it again to
+check its backend ID and network attachments. Use a provider project and internal
+network that already exist; the network must belong to that project.
+
+From the SDK repository, install the current checkout and set `MTN_CLOUD_TOKEN`
+in your environment. Then run:
+
+```shell
+python -m pip install -e .
+python examples/create_router.py --resource-pool my-project --internal-network app-net --name app-router
+```
+
+The group defaults to `MTNNG_CLOUD_AZ_1` and the external network defaults to
+`public-network-01`. Override them with `--group` and `--external-network`.
+Use `--cloud-id` when the group contains multiple clouds. The script attaches all
+subnets of the internal network, which must be available for attachment.
+
+To exercise creation and cleanup together:
+
+```shell
+python examples/create_router.py --resource-pool my-project --internal-network app-net --name router-validation --delete-after
+```
+
+`--delete-after` deletes only the router created by this invocation, including
+when provisioning fails after an ID was returned. It confirms removal before
+exiting. Existing networks and the resource pool remain. Without this flag, the
+router stays in place; use its printed ID for later cleanup:
+
+```python
+with MTNCloud() as cloud:
+    cloud.routers.delete(router_id)
+    cloud.routers.wait_until_deleted(router_id)
+```
 
 Only MTN's `neutronRouter` type is supported for creation and deletion. The SDK
 selects the type automatically. `create()` submits provisioning and reads the
-initial router record; use `wait_until_ready()` to confirm that it succeeded.
-Both wait methods default to a five-minute timeout and five-second polling.
+initial record; `wait_until_ready()` confirms backend readiness. Wait methods
+default to a five-minute timeout and five-second polling.
 
-A provisioning failure raises `MTNCloudError`; waiting too long raises the SDK's
-`TimeoutError`. These errors include the router ID in `error.response["router_id"]`.
-A failed initial read after creation also preserves the ID there. Inspect or delete
-that router explicitly; the SDK does not automatically remove failed routers.
-Deleting a router leaves its existing networks and resource pool intact.
+Provisioning failures raise `MTNCloudError`; polling timeouts raise the SDK's
+`TimeoutError`. These errors and post-create read errors preserve the router ID
+in `error.response["router_id"]` for inspection or cleanup.
 
 See the [Routers API reference](./api-reference/routers.md) for method details.
 
