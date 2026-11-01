@@ -164,14 +164,15 @@ Pick explicit templates and plans instead of "first result" in production.
 group = cloud.groups.get_by_name("MTNNG_CLOUD_AZ_1")
 target_type = cloud.instance_types.get_by_code("MTN-U24.04LTS")
 
+pool = cloud.instances.get_resource_pool("my-project", group=group.name)
+
 plans = cloud.instances.list_service_plans(
     zone_id=group.cloud_ids[0],
     layout_id=target_type.default_layout_id,
     group_id=group.id,
+    resource_pool_id=pool.code,
 )
 target_plan = next(p for p in plans if p["name"] == "G2S4")
-
-pool = cloud.instances.get_resource_pool("my-project", group=group.name)
 
 instance = cloud.instances.create(
     name="api-worker-01",
@@ -203,3 +204,12 @@ instance = cloud.instances.create(
 )
 logger.info("instance-created id=%s status=%s", instance.id, instance.status)
 ```
+
+Pagination uses the API's total when available, including when the server caps
+the requested page size. Without total metadata, a partial page ends iteration.
+Duplicate resource IDs raise `MTNCloudError`; iteration does not silently discard
+records or claim the inventory is complete.
+
+Explicit `success: false` JSON responses raise `MTNCloudError` even with HTTP 200.
+Transport exceptions redact configured credentials, and retry-wrapped read
+timeouts raise the SDK's `TimeoutError`.

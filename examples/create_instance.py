@@ -22,10 +22,14 @@ def main() -> None:
     group = cloud.groups.get_by_name("MTNNG_CLOUD_AZ_1")
     itype = cloud.instance_types.get_by_code("MTN-CS10")
     pools = cloud.instances.list_resource_pools(group=group.name)
+    if not pools:
+        print("No resource pool available. Create a project first.")
+        return
     plans = cloud.instances.list_service_plans(
         zone_id=group.cloud_ids[0],
         layout_id=itype.default_layout_id,
         group_id=group.id,
+        resource_pool_id=pools[0].code,
     )
 
     print(f"group={group.id} cloud_id={group.cloud_ids[0]} layout={itype.default_layout_id}")

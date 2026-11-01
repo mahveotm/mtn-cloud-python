@@ -6,10 +6,19 @@ from builtins import list as builtin_list
 from collections.abc import Iterator
 from typing import Any, Generic, TypeVar
 
+from mtn_cloud.exceptions import MTNCloudError
 from mtn_cloud.http import HTTPClient
 from mtn_cloud.models.base import Resource
 
 T = TypeVar("T", bound=Resource)
+
+
+class _ResourcePage(builtin_list[T]):
+    """Keep pagination metadata attached to its own response, not shared state."""
+
+    def __init__(self, items: builtin_list[T], total: int | None) -> None:
+        super().__init__(items)
+        self.total = total
 
 
 class BaseResource(Generic[T]):
@@ -65,7 +74,11 @@ class BaseResource(Generic[T]):
         Returns:
             List of parsed model instances
         """
-        items = data.get(self._list_key, [])
+        items = data.get(self._list_key)
+        if not isinstance(items, list):
+            raise MTNCloudError(
+                f"Invalid {self._name} response: expected a '{self._list_key}' list."
+            )
         return [self._model.model_validate(item) for item in items]
 
     def _build_list_params(
@@ -126,7 +139,11 @@ class BaseResource(Generic[T]):
             **filters,
         )
         response = self._http.get(self._path, params=params)
-        return self._parse_list(response)
+        meta = response.get("meta")
+        total = meta.get("total") if isinstance(meta, dict) else None
+        if type(total) is not int or total < 0:
+            total = None
+        return _ResourcePage(self._parse_list(response), total)
 
     def paginate(
         self,
@@ -141,7 +158,9 @@ class BaseResource(Generic[T]):
         Iterate through resources page by page.
 
         This helper repeatedly calls `list(...)` with `max_results=page_size`,
-        incrementing offset until the API returns a partial page or no items.
+        incrementing offset until the API's total is reached or no items remain.
+        Without total metadata, a partial page ends iteration. Duplicate IDs
+        raise MTNCloudError rather than silently yielding an unreliable inventory.
 
         Args:
             page_size: Number of items per page (must be >= 1)
@@ -163,6 +182,7 @@ class BaseResource(Generic[T]):
             raise ValueError("start_offset must be >= 0")
 
         offset = start_offset
+        seen_ids: set[int] = set()
         while True:
             page = self.list(
                 max_results=page_size,
@@ -175,12 +195,21 @@ class BaseResource(Generic[T]):
             if not page:
                 break
 
+            ids = [item.id for item in page]
+            if len(set(ids)) != len(ids) or seen_ids.intersection(ids):
+                raise MTNCloudError(
+                    f"Duplicate {self._name} IDs returned during pagination at offset {offset}."
+                )
+            seen_ids.update(ids)
+            total = page.total if isinstance(page, _ResourcePage) else None
+            offset += len(page)
             yield page
 
-            if len(page) < page_size:
+            if total is not None:
+                if offset >= total:
+                    break
+            elif len(page) < page_size:
                 break
-
-            offset += len(page)
 
     def iter_all(
         self,

@@ -395,8 +395,14 @@ class InstancesResource(BaseResource[Instance]):
         if layout_id is None:
             raise ValidationError(f"Instance type '{type}' has no available layout.")
 
-        plan_id = self._resolve_plan_id(plan, zone_id=zone_id, layout_id=layout_id, group_id=grp.id)
         pool_code = self._resolve_provision_pool(resource_pool, grp)
+        plan_id = self._resolve_plan_id(
+            plan,
+            zone_id=zone_id,
+            layout_id=layout_id,
+            group_id=grp.id,
+            resource_pool_id=pool_code,
+        )
 
         if dry_run:
             return {
@@ -450,6 +456,7 @@ class InstancesResource(BaseResource[Instance]):
         zone_id: int,
         layout_id: int,
         group_id: int,
+        resource_pool_id: str | int | None = None,
     ) -> int:
         """Resolve a plan name to its ID; pass numeric IDs through unchanged."""
         if isinstance(plan, int):
@@ -457,7 +464,12 @@ class InstancesResource(BaseResource[Instance]):
         if plan.isdigit():
             return int(plan)
 
-        plans = self.list_service_plans(zone_id=zone_id, layout_id=layout_id, group_id=group_id)
+        plans = self.list_service_plans(
+            zone_id=zone_id,
+            layout_id=layout_id,
+            group_id=group_id,
+            resource_pool_id=resource_pool_id,
+        )
         for candidate in plans:
             if candidate.get("name") == plan or candidate.get("code") == plan:
                 return int(candidate["id"])
@@ -874,6 +886,8 @@ class InstancesResource(BaseResource[Instance]):
         zone_id: int | None = None,
         layout_id: int | None = None,
         group_id: int | None = None,
+        *,
+        resource_pool_id: str | int | None = None,
     ) -> List[Dict[str, Any]]:
         """
         List service plans available for provisioning.
@@ -885,6 +899,8 @@ class InstancesResource(BaseResource[Instance]):
             zone_id: Cloud/zone ID to filter plans (use group.cloud_ids[0])
             layout_id: Layout ID to filter compatible plans
             group_id: Group/site ID to filter plans
+            resource_pool_id: Pool code ("pool-230") or numeric ID. Required by
+                MTN OpenStack layouts; discover it with list_resource_pools().
 
         Returns:
             List of plan dicts with id, name, maxCpu, maxMemory, maxStorage
@@ -896,6 +912,9 @@ class InstancesResource(BaseResource[Instance]):
             params["layoutId"] = layout_id
         if group_id is not None:
             params["siteId"] = group_id
+
+        if resource_pool_id is not None:
+            params["resourcePoolId"] = self._normalize_resource_pool_id(resource_pool_id)
 
         response = self._http.get("/instances/service-plans", params=params or None)
         plans: List[Dict[str, Any]] = response.get("plans", [])

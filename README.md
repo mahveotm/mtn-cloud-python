@@ -101,11 +101,15 @@ print(itype.code, itype.default_layout_id)
 for pool in cloud.instances.list_resource_pools(group="MTNNG_CLOUD_AZ_1"):
     print(pool.code, pool.name)
 
+# Select the project whose plans you need.
+pool = cloud.instances.get_resource_pool("my-project", group=group.name)
+
 # Service plans — CPU/memory/storage tiers for this zone + layout
 for plan in cloud.instances.list_service_plans(
     zone_id=group.cloud_ids[0],
     layout_id=itype.default_layout_id,
     group_id=group.id,
+    resource_pool_id=pool.code,
 ):
     print(plan["id"], plan["name"])
 ```
@@ -192,6 +196,8 @@ subnets = cloud.networks.list_subnets(new_network.id)
 print(f"Subnets: {len(subnets)}")
 ```
 
+Discover gateway names and IDs with `cloud.routers.list_external_networks(...)`
+or select one with `cloud.routers.get_external_network(...)`.
 Create routers with existing public networks and internal subnets using
 `cloud.routers.create(...)`, then confirm provisioning with
 `cloud.routers.wait_until_ready(router.id)`. See the

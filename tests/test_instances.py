@@ -272,6 +272,41 @@ class TestInstancesResource:
 
         mock_http.get.assert_called_with("/instances/123")
 
+    def test_get_instance_embedded_addresses(
+        self, resource: InstancesResource, mock_http: MagicMock
+    ) -> None:
+        """Resolve the live OpenStack response without another request or IP guessing."""
+        payload = {
+            "id": 4665,
+            "status": "running",
+            "ipAddress": None,
+            "externalIp": None,
+            "containerDetails": [
+                {
+                    "internalIp": "10.10.2.3",
+                    "ip": "102.88.134.208",
+                    "server": {"internalIp": "10.10.2.3", "externalIp": "102.88.134.208"},
+                }
+            ],
+        }
+        mock_http.get.return_value = {"instance": payload}
+        instance = resource.get(4665)
+        assert (instance.ip_address, instance.external_ip) == ("10.10.2.3", "102.88.134.208")
+        assert instance.primary_ip == "10.10.2.3"
+        mock_http.get.assert_called_once_with("/instances/4665")
+        assert payload["ipAddress"] is None
+        assert payload["externalIp"] is None
+
+        explicit = Instance.model_validate(
+            {**payload, "ipAddress": "10.0.0.1", "externalIp": "203.0.113.1"}
+        )
+        assert (explicit.ip_address, explicit.external_ip) == ("10.0.0.1", "203.0.113.1")
+        private_only = Instance.model_validate(
+            {**payload, "containerDetails": [{"internalIp": "10.10.2.3", "ip": "10.10.2.3"}]}
+        )
+        assert private_only.ip_address == "10.10.2.3"
+        assert private_only.external_ip is None
+
     def test_create_instance_name(self, resource: InstancesResource, mock_http: MagicMock) -> None:
         """Return the created instance."""
         mock_http.post.return_value = {"instance": SAMPLE_INSTANCE}
@@ -513,7 +548,7 @@ class TestInstancesResource:
     @staticmethod
     def _mock_paginated_instances(mock_http: MagicMock) -> None:
         pages = {
-            0: SAMPLE_INSTANCES_LIST,
+            0: {**SAMPLE_INSTANCES_LIST, "meta": {"total": 5}},
             2: {
                 "instances": [
                     {
@@ -630,6 +665,12 @@ class TestProvision:
                     ]
                 }
             if "service-plans" in path:
+                assert params == {
+                    "zoneId": 4,
+                    "layoutId": 327,
+                    "siteId": 621,
+                    "resourcePoolId": "pool-230",
+                }
                 return {"plans": [{"id": 6776, "name": "G2S4"}]}
             if "zonePools" in path:
                 return {"data": [{"id": 230, "value": "pool-230", "name": "my-project"}]}
@@ -657,3 +698,15 @@ class TestProvision:
             "security_group": "default",
         }
         mock_http.post.assert_not_called()
+
+
+def test_service_plan_discovery_normalizes_numeric_pool(resource, mock_http):
+    mock_http.get.return_value = {"plans": [{"id": 7372, "name": "G1S1"}]}
+    plans = resource.list_service_plans(
+        zone_id=4, layout_id=309, group_id=621, resource_pool_id=230
+    )
+    assert plans[0]["id"] == 7372
+    mock_http.get.assert_called_once_with(
+        "/instances/service-plans",
+        params={"zoneId": 4, "layoutId": 309, "siteId": 621, "resourcePoolId": "pool-230"},
+    )

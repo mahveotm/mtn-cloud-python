@@ -67,3 +67,31 @@ class TestGroupsResource:
 
         with pytest.raises(NotFoundError):
             resource.get_by_name("missing")
+
+
+@pytest.mark.parametrize("body", [{}, {"groups": None}])
+def test_list_rejects_missing_or_null_collection(resource, mock_http, body):
+    from mtn_cloud.exceptions import MTNCloudError
+
+    mock_http.get.return_value = body
+    with pytest.raises(MTNCloudError, match="expected a 'groups' list"):
+        resource.list()
+
+
+def test_pagination_uses_total_when_server_caps_page_size(resource, mock_http):
+    mock_http.get.side_effect = [
+        {"groups": [{"id": 1}, {"id": 2}], "meta": {"total": 3, "max": 2}},
+        {"groups": [{"id": 3}], "meta": {"total": 3, "max": 2}},
+    ]
+    assert [group.id for group in resource.iter_all(page_size=100)] == [1, 2, 3]
+    assert mock_http.get.call_args.kwargs["params"]["offset"] == 2
+
+
+def test_pagination_rejects_duplicate_ids_before_yielding_page(resource, mock_http):
+    from mtn_cloud.exceptions import MTNCloudError
+
+    mock_http.get.return_value = {"groups": [{"id": 1}], "meta": {"total": 2}}
+    pages = resource.paginate(page_size=1)
+    assert next(pages)[0].id == 1
+    with pytest.raises(MTNCloudError, match="Duplicate group IDs.*offset 1"):
+        next(pages)

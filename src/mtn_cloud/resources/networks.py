@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, List
 
-from mtn_cloud.exceptions import NotFoundError
+from mtn_cloud.exceptions import MTNCloudError, NotFoundError
 from mtn_cloud.models.network import (
     Network,
     NetworkCreate,
@@ -291,7 +291,12 @@ class NetworksResource(BaseResource[Network]):
         path = f"{self._path}/{network_id}/subnets"
         response = self._http.get(path)
         subnets = response.get("subnets", [])
-        return [Subnet.model_validate(subnet) for subnet in subnets]
+        parsed = [Subnet.model_validate(subnet) for subnet in subnets]
+        if any(subnet.network_id != network_id for subnet in parsed):
+            raise MTNCloudError(
+                f"Subnet discovery for network {network_id} returned subnets without a matching parent network. Retry discovery after the network is ready; no subnets were selected."
+            )
+        return parsed
 
     def list_types(
         self,

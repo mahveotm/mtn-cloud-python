@@ -10,6 +10,7 @@ from typing import Any, Literal
 import requests
 from pydantic import SecretStr
 from requests.adapters import HTTPAdapter
+from urllib3.exceptions import TimeoutError as Urllib3TimeoutError
 from urllib3.util.retry import Retry
 
 from mtn_cloud.config import MTNCloudConfig
@@ -197,20 +198,20 @@ class HTTPClient:
                 token = result["access_token"]
                 if not isinstance(token, str) or not token:
                     raise ValueError("access_token must be a non-empty string")
-            except (KeyError, TypeError, ValueError) as exc:
+            except (KeyError, TypeError, ValueError):
                 safe_payload = self._redact(self._parse_response_body(response))
                 raise AuthenticationError(
                     "Authentication response did not contain a valid access token.",
                     status_code=response.status_code,
                     response=safe_payload,
-                ) from exc
+                ) from None
             self._token = token
 
             logger.debug("Successfully authenticated")
             return token
 
         except requests.exceptions.RequestException as e:
-            raise AuthenticationError(f"Authentication request failed: {e}") from e
+            raise AuthenticationError(self._redact(f"Authentication request failed: {e}")) from None
 
     def _get_headers(self) -> dict[str, str]:
         """Get request headers with authentication."""
@@ -260,7 +261,7 @@ class HTTPClient:
         request_timeout = timeout if timeout is not None else self.config.timeout
 
         if self.config.debug:
-            logger.debug("Request: %s %s", method, url)
+            logger.debug("Request: %s %s", method, self._redact(url))
             if params:
                 logger.debug("Params: %s", self._format_for_log(params))
             if json:
@@ -284,15 +285,38 @@ class HTTPClient:
 
             return self._handle_response(response)
 
-        except requests.exceptions.Timeout as e:
-            raise MTNTimeoutError(
-                f"Request to {path} timed out",
-                timeout=request_timeout,
-            ) from e
-        except requests.exceptions.ConnectionError as e:
-            raise MTNCloudError(f"Connection error: {e}") from e
         except requests.exceptions.RequestException as e:
-            raise MTNCloudError(f"Request failed: {e}") from e
+            raise self._transport_error(e, path, request_timeout) from None
+
+    def _transport_error(
+        self, error: requests.exceptions.RequestException, path: str, timeout: float
+    ) -> MTNCloudError:
+        """Recognize retry-wrapped timeouts without exposing transport secrets."""
+        pending: list[BaseException] = [error]
+        seen: set[int] = set()
+        while pending:
+            current = pending.pop()
+            if id(current) in seen:
+                continue
+            seen.add(id(current))
+            if isinstance(current, (requests.exceptions.Timeout, Urllib3TimeoutError)):
+                return MTNTimeoutError(
+                    self._redact(f"Request to {path} timed out"), timeout=timeout
+                )
+            for nested in (
+                current.__cause__,
+                current.__context__,
+                getattr(current, "reason", None),
+                *current.args,
+            ):
+                if isinstance(nested, BaseException):
+                    pending.append(nested)
+        prefix = (
+            "Connection error"
+            if isinstance(error, requests.exceptions.ConnectionError)
+            else "Request failed"
+        )
+        return MTNCloudError(self._redact(f"{prefix}: {error}"))
 
     def _build_url(self, path: str) -> str:
         """Build full URL from path."""
@@ -322,6 +346,14 @@ class HTTPClient:
             logger.debug("Body: %s", self._format_for_log(body))
 
         if 200 <= response.status_code < 300:
+            if body.get("success") is False:
+                safe_body = self._redact(body)
+                raise MTNCloudError(
+                    self._extract_error_message(safe_body),
+                    status_code=response.status_code,
+                    response=safe_body,
+                    request_id=request_id,
+                )
             return body
 
         safe_body = self._redact(body)
@@ -586,15 +618,8 @@ class HTTPClient:
             # Reuse standard error mapping.
             self._handle_response(response)
             return b""
-        except requests.exceptions.Timeout as e:
-            raise MTNTimeoutError(
-                f"Request to {path} timed out",
-                timeout=request_timeout,
-            ) from e
-        except requests.exceptions.ConnectionError as e:
-            raise MTNCloudError(f"Connection error: {e}") from e
         except requests.exceptions.RequestException as e:
-            raise MTNCloudError(f"Request failed: {e}") from e
+            raise self._transport_error(e, path, request_timeout) from None
 
     def close(self) -> None:
         """Close the HTTP session."""

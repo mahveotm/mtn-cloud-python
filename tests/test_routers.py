@@ -1,5 +1,7 @@
 """Focused router lifecycle tests using the shared mocked HTTP client."""
 
+import json
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -137,3 +139,85 @@ def test_create_requires_mtn_type(mock_http: MagicMock) -> None:
     with pytest.raises(ValueError, match="neutronRouter"):
         RoutersResource(mock_http).create(**CREATE)
     mock_http.post.assert_not_called()
+
+
+@pytest.fixture
+def external_discovery_http(mock_http: MagicMock) -> MagicMock:
+    options = json.loads(
+        (Path(__file__).parent / "fixtures/external_network_options.json").read_text()
+    )
+
+    def get(path: str, params: dict | None = None) -> dict:
+        if path == "/groups":
+            return {"groups": [{"id": 621, "name": "group", "zones": [{"id": 4}]}]}
+        if path == "/options/zonePools":
+            assert params == {"cloudId": 4, "groupId": 621, "provisionTypeCode": "openstack"}
+            return {"data": [{"id": 213, "name": "project", "value": "pool-213"}]}
+        if path == "/network-router-types":
+            return {"networkRouterTypes": [{"id": 17, "code": "neutronRouter"}]}
+        if path == "/network-router-types/17":
+            return {
+                "networkRouterType": {
+                    "id": 17,
+                    "code": "neutronRouter",
+                    "creatable": True,
+                    "hasNetworkServer": False,
+                }
+            }
+        if path == "/options/openstackExternalNetworks":
+            assert params == {
+                "router.zone.id": 4,
+                "router.site.id": 621,
+                "router.poolId": "pool-213",
+                "routerType.id": 17,
+            }
+            return options
+        raise AssertionError(f"Unexpected endpoint: {path}")
+
+    mock_http.get.side_effect = get
+    return mock_http
+
+
+def test_external_network_discovery_uses_scoped_options(external_discovery_http: MagicMock) -> None:
+    routers = RoutersResource(external_discovery_http)
+    networks = routers.list_external_networks(group="group", resource_pool="project")
+    assert [(n.name, n.id) for n in networks] == [
+        ("public-network-01", 34),
+        ("public-network-02", 32),
+        ("public-network-03", 30),
+        ("public-network-04", 31),
+    ]
+    assert (
+        routers.get_external_network(
+            "public-network-02", group="group", resource_pool="pool-213"
+        ).id
+        == 32
+    )
+    with pytest.raises(NotFoundError, match="Available names: public-network-01"):
+        routers.get_external_network("missing", group="group", resource_pool="project")
+
+
+def test_external_network_lookup_rejects_duplicate_names(
+    external_discovery_http: MagicMock,
+) -> None:
+    original = external_discovery_http.get.side_effect
+
+    def get(path: str, params: dict | None = None) -> dict:
+        if path == "/options/openstackExternalNetworks":
+            return {"data": [{"name": "public", "value": 34}, {"name": "public", "value": 32}]}
+        return original(path, params=params)
+
+    external_discovery_http.get.side_effect = get
+    with pytest.raises(ValueError, match="ambiguous"):
+        RoutersResource(external_discovery_http).get_external_network(
+            "public", group="group", resource_pool="project"
+        )
+
+
+def test_external_discovery_requires_unambiguous_cloud(mock_http: MagicMock) -> None:
+    mock_http.get.return_value = {
+        "groups": [{"id": 621, "name": "group", "zones": [{"id": 4}, {"id": 5}]}]
+    }
+    with pytest.raises(ValueError, match="set cloud_id explicitly"):
+        RoutersResource(mock_http).list_external_networks(group="group", resource_pool="project")
+    mock_http.get.assert_called_once()

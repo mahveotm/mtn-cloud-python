@@ -338,3 +338,40 @@ class TestRetryAfter:
             client.get("/limited")
 
         assert captured.value.retry_after == 120
+
+
+def test_http_200_failure_envelope_is_rejected() -> None:
+    from mtn_cloud.resources.instances import InstancesResource
+
+    client, _ = client_with_response(
+        response(200, {"success": False, "msg": "refused configured-token"})
+    )
+    with pytest.raises(MTNCloudError, match="refused <redacted>") as captured:
+        InstancesResource(client).delete(1)
+    assert captured.value.status_code == 200
+
+
+@pytest.mark.parametrize("binary", [False, True])
+def test_retry_wrapped_read_timeout_is_mapped(binary: bool) -> None:
+    from urllib3.exceptions import MaxRetryError, ReadTimeoutError
+
+    client, session = client_with_response(response(200, {}))
+    session.request.side_effect = requests.ConnectionError(
+        MaxRetryError(None, "/slow", ReadTimeoutError(None, "/slow", "slow"))
+    )
+    request = client.get_bytes if binary else client.get
+    with pytest.raises(TimeoutError) as captured:
+        request("/slow", timeout=7.5)
+    assert captured.value.timeout == 7.5
+
+
+def test_transport_errors_do_not_leak_secrets_in_tracebacks() -> None:
+    import traceback
+
+    client, session = client_with_response(response(200, {}))
+    session.request.side_effect = requests.ConnectionError("failed configured-token")
+    with pytest.raises(MTNCloudError) as captured:
+        client.get("/groups")
+    rendered = "".join(traceback.format_exception(captured.type, captured.value, captured.tb))
+    assert "configured-token" not in rendered
+    assert REDACTED in str(captured.value)

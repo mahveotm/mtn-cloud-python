@@ -10,6 +10,24 @@ This changelog covers published releases from 0.3.1 onward. See the
 
 ## [Unreleased]
 
+### Added
+
+- `cloud.routers.list_external_networks()` and `get_external_network()` for
+  discovering available router gateways by group and resource-pool name, with
+  unambiguous cloud selection and typed names/IDs.
+
+### Fixed
+
+- Instance addresses fall back to embedded VM details when the API omits
+  top-level private and floating IP fields, without additional HTTP requests.
+
+- Subnet discovery rejects responses containing subnets without the requested
+  parent network, preventing accidental attachment of unrelated subnets.
+
+- Router examples use the scoped external-network options endpoint instead of
+  ordinary network lookup. The runnable example supports explicit cleanup after
+  validation and checks backend readiness and network attachments.
+
 ## [0.4.1] - 2026-10-28
 
 ### Added

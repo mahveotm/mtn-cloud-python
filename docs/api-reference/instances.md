@@ -247,11 +247,12 @@ These helpers resolve the IDs and codes required by `create()` using permission-
 - Returns: `ResourcePool`
 - Raises: `NotFoundError` if no pool matches `name`
 
-### `list_service_plans(zone_id=None, layout_id=None, group_id=None) -> list[dict[str, Any]]`
+### `list_service_plans(zone_id=None, layout_id=None, group_id=None, *, resource_pool_id=None) -> list[dict[str, Any]]`
 
-- Endpoint: `GET /api/instances/service-plans?zoneId={zone_id}&layoutId={layout_id}&siteId={group_id}`
+- Endpoint: `GET /api/instances/service-plans?zoneId={zone_id}&layoutId={layout_id}&siteId={group_id}&resourcePoolId={pool_code}`
 - Returns available service plans (CPU/memory/storage tiers) scoped to the provisioning context
-- `layout_id` is required by the API; use `instance_type.default_layout_id`
+- `zone_id` and `layout_id` are required by the API; use the discovered cloud and `instance_type.default_layout_id`
+- `resource_pool_id` accepts a numeric pool ID or its `pool-...` code. MTN OpenStack layouts require it; omitting it can return HTTP 500. `provision()` resolves the selected pool before plan discovery.
 - Returns: list of plan dicts from response key `plans`
 
 **`ResourcePool` model fields:** `id` (numeric), `code` (alias of API `value`, e.g. `"pool-214"`), `name`, `external_id` (OpenStack pool ID), `is_default`.

@@ -40,7 +40,7 @@ from mtn_cloud.models.network import (
 )
 from mtn_cloud.models.plan import ServicePlan
 from mtn_cloud.models.resource_pool import ResourcePool
-from mtn_cloud.models.router import Router, RouterCreate, RouterInterface
+from mtn_cloud.models.router import ExternalNetwork, Router, RouterCreate, RouterInterface
 from mtn_cloud.models.security_group import (
     SecurityGroup,
     SecurityGroupCreate,
@@ -76,6 +76,7 @@ __all__ = [
     "InstanceType",
     "InstanceTypeLayout",
     # Router
+    "ExternalNetwork",
     "Router",
     "RouterCreate",
     "RouterInterface",

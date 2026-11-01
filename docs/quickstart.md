@@ -106,12 +106,14 @@ itype = cloud.instance_types.get_by_code("MTN-CS10")
 
 # Resource pool — the resource_pool_id, where the instance is hosted
 pools = cloud.instances.list_resource_pools(group=group.name)
+pool = cloud.instances.get_resource_pool("my-project", group=group.name)
 
 # Service plans — CPU/memory/storage tiers for this zone + layout
 plans = cloud.instances.list_service_plans(
     zone_id=cloud_id,
     layout_id=itype.default_layout_id,
     group_id=group.id,
+    resource_pool_id=pool.code,
 )
 
 print("group:", group.id, "cloud_id:", cloud_id)
@@ -134,7 +136,7 @@ instance = cloud.instances.create(
     group="MTNNG_CLOUD_AZ_1",
     layout=327,
     plan=6923,
-    resource_pool_id=pools[0].code,     # from list_resource_pools() above
+    resource_pool_id=pool.code,     # from list_resource_pools() above
     availability_zone="Lagos-AZ-1-fd1",
     security_group="web-servers",       # the security group you created above
 )

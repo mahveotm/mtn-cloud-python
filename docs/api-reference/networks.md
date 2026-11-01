@@ -73,7 +73,7 @@
 
 - Endpoint: `GET /api/networks/{network_id}/subnets`
 - Returns: `list[Subnet]`
-- Raises: common API exceptions
+- Raises: common API exceptions; `MTNCloudError` if a returned subnet does not identify the requested parent network. Retry discovery after network provisioning completes.
 
 ### `list_types(name=None, code=None, phrase=None, openstack_only=False) -> list[NetworkTypeInfo]`
 
@@ -121,3 +121,6 @@
 
 > **Note:** Standalone floating-IP endpoints (`/api/networks/floating-ips`) are restricted (HTTP 403) on MTN Cloud tenant accounts and are not exposed by the SDK. Use an [MTN router](./routers.md) for a network gateway, or the instance's `os_external_network_id` for public connectivity during provisioning.
 
+
+For router public gateways, use `cloud.routers.list_external_networks()` or
+`get_external_network()`; these options may not appear in ordinary network lookups.
